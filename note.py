@@ -9,8 +9,10 @@
 import tkinter as tk
 import ctypes
 import os
+import io
 import markdown
 import webbrowser
+import base64
 from tkinterweb import HtmlFrame
 from tkinter import scrolledtext
 from tkinter import ttk
@@ -113,12 +115,13 @@ class AppModel:
 
 
 #-------------------------------------------
-# View
+# Widgets
 #-------------------------------------------
 
 class Icons:
     def __init__(self, master):
-        self.font = ImageFont.truetype(font="icofont.ttf", size=20)
+        font_data = base64.b64decode(ICONFONT)
+        self.font = ImageFont.truetype(font=io.BytesIO(font_data), size=20)
         self.new = self.draw_text("\uefc2")
         self.search = self.draw_text("\uef7f")
         self.screenshot = self.draw_text("\ueecf")
@@ -143,19 +146,22 @@ class FilterableListbox(ttk.Frame):
         self.model.on_changed.subscribe(self.update)
 
     def create_widgets(self, icons):
-        self.new_button = tk.Button(self, image=icons.new, command=self.model.add_new)
-        self.new_button.pack(side = tk.TOP, fill=tk.X)
+        self.commandframe = ttk.Frame(self)
+        self.new_button = ttk.Button(self.commandframe, image=icons.new, command=self.model.add_new)
+        self.new_button.pack(side = tk.RIGHT, fill=tk.X)
         ToolTip(self.new_button, msg="add new note", delay=1.0)
+        self.label = ttk.Label(self.commandframe, image=icons.search)
+        self.label.pack(side=tk.RIGHT, fill=tk.X)
         self.filter = tk.StringVar()
         self.filter.trace("w", lambda *args: self.update() )
-        self.entry = tk.Entry(self, textvariable=self.filter)
-        self.entry.pack(side=tk.TOP, fill=tk.X)
+        self.entry = ttk.Entry(self.commandframe, textvariable=self.filter)
+        self.entry.pack(fill=tk.X, expand=True, padx=5)
         ToolTip(self.entry, msg="filter notes", delay=1.0)
-        self.label = ttk.Label(self, image=icons.search)
-        self.label.pack(side=tk.TOP, fill=tk.X)
+        self.commandframe.pack(side = tk.TOP, fill=tk.X)
+
         self.listbox = tk.Listbox(self)
-        self.listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
-        self.scrollbar=tk.Scrollbar(self)
+        self.listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.scrollbar=ttk.Scrollbar(self)
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.listbox.config(yscrollcommand= self.scrollbar.set)
         self.listbox.bind('<<ListboxSelect>>', self.onselect)
@@ -279,6 +285,67 @@ class App:
     def run(self):
         self.root.mainloop()   
 
+ICONFONT = (
+    "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"
+    "ASY0NzY3NicmJyYFNjIfARY2PQE0JisBIgYXFhceAQcGBwYXFhcWFx4BNzI2"
+    "NTQ3NCYjJicmAf0EBQYEU0U/LCgOJ3gDCANLAwQBBgSYTQQCA0cDAmoNDVY7"
+    "XFj+jwMIA0sDBAYE5QQCAy8ZAgEDSxwaEQ8wKj47hTwEBgEGBOpIPQL+BQRT"
+    "BAYEKCM7Nz+siAMDSgMCBOMEBgEEAkgCCQOChYuLXzIwoQMDSwIBBOMEBQQD"
+    "LxgDCANSZ11hXEk/LywtAwYFNBoEBxbPswAAAAAFAK7/qAM6AxQACQAZACkA"
+    "OQBNAAAXHgEzITI2NxMhBTQ2OwEyFhURFAYrASImNQM0NjsBMhYVERQGKwEi"
+    "JjUDNDY7ATIWFREUBisBIiY1ASM1NCYrASIGHQEjIgYdASE1NCb7ARkSAZsR"
+    "GgEd/dIBdAsHHQcLCwcdBwt9CwcdBwoKBx0HC30LBxwHCwsHHAcLAci+BQTH"
+    "BAa9CxECjBAtEhkZEgJsmgcKCgf+nQcKCgcBYwcKCgf+nQcKCgcBYwcKCgf+"
+    "nQcKCgcCpCQEBgYEJBALV1cLEAAAAA4ArgABAAAAAAAAABgAMgABAAAAAAAB"
+    "AAkAXwABAAAAAAACAAcAeQABAAAAAAADACYAzwABAAAAAAAEAAkBCgABAAAA"
+    "AAAFABABNgABAAAAAAAGAAYBVQADAAEECQAAADAAAAADAAEECQABABIASwAD"
+    "AAEECQACAA4AaQADAAEECQADAEwAgQADAAEECQAEABIA9gADAAEECQAFACAB"
+    "FAADAAEECQAGAAwBRwBDAG8AcAB5AHIAaQBnAGgAdAAgACgAYwApACAAMgAw"
+    "ADIAMgAsACAAdQBzAGUAcgAAQ29weXJpZ2h0IChjKSAyMDIyLCB1c2VyAABV"
+    "AG4AdABpAHQAbABlAGQAMQAAVW50aXRsZWQxAABSAGUAZwB1AGwAYQByAABS"
+    "ZWd1bGFyAABGAG8AbgB0AEYAbwByAGcAZQAgADIALgAwACAAOgAgAFUAbgB0"
+    "AGkAdABsAGUAZAAxACAAOgAgADEANgAtADEAMgAtADIAMAAyADIAAEZvbnRG"
+    "b3JnZSAyLjAgOiBVbnRpdGxlZDEgOiAxNi0xMi0yMDIyAABVAG4AdABpAHQA"
+    "bABlAGQAMQAAVW50aXRsZWQxAABWAGUAcgBzAGkAbwBuACAAMAAwADEALgAw"
+    "ADAAMAAgAABWZXJzaW9uIDAwMS4wMDAgAABuAG8AdABlAHAAeQAAbm90ZXB5"
+    "AAAAAAIAAAAAAAD/tQAyAAAAAQAAAAAAAAAAAAAAAAAAAAAACAAAAAEAAgEC"
+    "AQMBBAEFAQYGcGx1cy0yBGxvb2sGY2FtZXJhDXNwaW5uZXItYWx0LTMDYmlu"
+    "AAAAAAH//wACAAAAAQAAAADeBipuAAAAAN/Ch6oAAAAA38KHqg==")
 
 if __name__ == "__main__":
     app = App()
