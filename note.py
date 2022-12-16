@@ -14,6 +14,8 @@ import webbrowser
 from tkinterweb import HtmlFrame
 from tkinter import scrolledtext
 from tkinter import ttk
+from tktooltip import ToolTip
+from PIL import ImageFont, ImageDraw, Image, ImageTk
 
 #-------------------------------------------
 # Model
@@ -98,7 +100,7 @@ class NoteCollection:
 
 class AppModel:
     def __init__(self):
-        self.__name = "MyNote"
+        self.__name = "note.py"
         self.__geometry = "800x600"
         self.notes = NoteCollection()
 
@@ -114,21 +116,43 @@ class AppModel:
 # View
 #-------------------------------------------
 
+class Icons:
+    def __init__(self, master):
+        self.font = ImageFont.truetype(font="icofont.ttf", size=20)
+        self.new = self.draw_text("\uefc2")
+        self.search = self.draw_text("\uef7f")
+        self.screenshot = self.draw_text("\ueecf")
+        self.save = self.draw_text("\ueff6")
+        self.delete = self.draw_text("\ueebb")
+
+    def draw_text(self, value):
+        left, top, right, bottom = self.font.getbbox(value)
+        box = (right - left, bottom - top)
+        image = Image.new(mode="RGBA", size=box)
+        draw = ImageDraw.Draw(im=image)
+        draw.text(xy=(0,0), text=value, fill='black', font=self.font, anchor="lt")
+        return ImageTk.PhotoImage(image=image)
+
+
 class FilterableListbox(ttk.Frame):
-    def __init__(self, master, model):
+    def __init__(self, master, model, icons):
         tk.Frame.__init__(self, master)
         self.model = model
         self.pack()
-        self.create_widgets()
+        self.create_widgets(icons)
         self.model.on_changed.subscribe(self.update)
 
-    def create_widgets(self):
-        self.new_button = ttk.Button(self, text='New', command=self.model.add_new)
+    def create_widgets(self, icons):
+        self.new_button = tk.Button(self, image=icons.new, command=self.model.add_new)
         self.new_button.pack(side = tk.TOP, fill=tk.X)
+        ToolTip(self.new_button, msg="add new note", delay=1.0)
         self.filter = tk.StringVar()
         self.filter.trace("w", lambda *args: self.update() )
         self.entry = tk.Entry(self, textvariable=self.filter)
         self.entry.pack(side=tk.TOP, fill=tk.X)
+        ToolTip(self.entry, msg="filter notes", delay=1.0)
+        self.label = ttk.Label(self, image=icons.search)
+        self.label.pack(side=tk.TOP, fill=tk.X)
         self.listbox = tk.Listbox(self)
         self.listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
         self.scrollbar=tk.Scrollbar(self)
@@ -161,15 +185,15 @@ class FilterableListbox(ttk.Frame):
             self.model.select(result)
 
 class NoteFrame(ttk.Frame):
-    def __init__(self, master, model):
+    def __init__(self, master, model, icons):
         tk.Frame.__init__(self, master)
         self.note = None
         self.model = model
         self.pack()
-        self.create_widgets()
+        self.create_widgets(icons)
         model.on_selection_changed.subscribe(self.update)
 
-    def create_widgets(self):
+    def create_widgets(self, icons):
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
@@ -182,13 +206,19 @@ class NoteFrame(ttk.Frame):
 
         editframe = tk.Frame(self.notebook)
         commandframe = ttk.Frame(editframe)
-        updatebutton = ttk.Button(commandframe, text='Update', command = self.save)
+        deletebutton = ttk.Button(commandframe, image=icons.delete)
+        deletebutton.pack(side=tk.RIGHT)
+        ToolTip(deletebutton, msg="remove this note", delay=1.0)
+        updatebutton = ttk.Button(commandframe, image=icons.save, command = self.save)
         updatebutton.pack(side=tk.RIGHT)
-        screenshotbutton = ttk.Button(commandframe, text='Screenshot')
+        ToolTip(updatebutton, msg="sync changes", delay=1.0)
+        screenshotbutton = ttk.Button(commandframe, image=icons.screenshot)
         screenshotbutton.pack(side=tk.RIGHT, padx=5)
+        ToolTip(screenshotbutton, msg="take screenshot", delay=1.0)
         namevar = tk.StringVar()
         nameedit = tk.Entry(commandframe, textvariable=namevar)
         nameedit.pack(fill=tk.BOTH, expand=True)
+        ToolTip(nameedit, msg="change title", delay=1.0)
 
         commandframe.pack(fill=tk.X, side=tk.TOP)
 
@@ -196,7 +226,7 @@ class NoteFrame(ttk.Frame):
         self.text.pack(fill=tk.BOTH, expand=True)
         self.text.bind('<KeyRelease>', lambda e: self.update_view())
         self.notebook.add(editframe, text='Edit')
-        self.activateable_widgets = [ updatebutton, screenshotbutton, nameedit, self.text]
+        self.activateable_widgets = [ updatebutton, deletebutton, screenshotbutton, nameedit, self.text]
         self.enable(False)
 
     def enable(self, value=True):
@@ -231,17 +261,18 @@ class NoteFrame(ttk.Frame):
 class App:
     def __init__(self, model=AppModel()):
         self.root = tk.Tk()
+        self.icons = Icons(self.root)
         self.root.title(model.get_name())
         self.root.geometry(model.get_geometry())
 
         self.splitPane = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
         self.splitPane.pack(fill=tk.BOTH, expand=True)
 
-        self.listbox = FilterableListbox(self.splitPane, model.notes)
+        self.listbox = FilterableListbox(self.splitPane, model.notes, self.icons)
         self.listbox.pack(fill=tk.BOTH, expand=True)
         self.splitPane.add(self.listbox)
 
-        self.noteframe = NoteFrame(self.splitPane, model.notes)
+        self.noteframe = NoteFrame(self.splitPane, model.notes, self.icons)
         self.noteframe.pack(fill=tk.BOTH, expand=True)
         self.splitPane.add(self.noteframe)
 
