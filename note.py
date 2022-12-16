@@ -56,7 +56,6 @@ class Note:
 
     def contents(self, value=None):
         if None != value:
-            print("set contents: %s" % value)
             self.__contents = value
             self.contents_changed.fire()
         return self.__contents
@@ -72,13 +71,19 @@ class NoteCollection:
         self.invalid_note = Note("", isvalid=False)
         self._selected_note = self.invalid_note
     
-    def __generate_name(self):
+    def _generate_name(self):
         name = "Untitled"
         number = 0
         while name in self.notes:
             number += 1
             name = "Untitled %d" % (number)
         return name
+
+    def _rebuild_index(self):
+        notes = dict()
+        for note in self.notes.values():
+            notes[note.name()] = note
+        self.notes = notes
 
     def query(self, filter="", reverse=False):
         notes = []
@@ -89,8 +94,14 @@ class NoteCollection:
         return notes
 
     def add_new(self):
-        name = self.__generate_name()
-        self.notes[name] = Note(name)
+        name = self._generate_name()
+        note = Note(name)
+        self.notes[name] = note
+        note.name_changed.subscribe(self.note_changed)
+        self.on_changed.fire()
+
+    def note_changed(self):
+        self._rebuild_index()
         self.on_changed.fire()
 
     def selected_note(self):
@@ -205,7 +216,7 @@ class NoteFrame(ttk.Frame):
 
         self.frame = HtmlFrame(self.notebook, messages_enabled=False)
         #frame.on_link_click(clicked)
-        html = markdown.markdown('')
+        html = markdown.markdown('', extensions=['tables'])
         self.frame.load_html(html)
         self.frame.pack(fill=tk.BOTH, expand=1)
         self.notebook.add(self.frame, text='View')
@@ -221,8 +232,8 @@ class NoteFrame(ttk.Frame):
         screenshotbutton = ttk.Button(commandframe, image=icons.screenshot)
         screenshotbutton.pack(side=tk.RIGHT, padx=5)
         ToolTip(screenshotbutton, msg="take screenshot", delay=1.0)
-        namevar = tk.StringVar()
-        nameedit = tk.Entry(commandframe, textvariable=namevar)
+        self.namevar = tk.StringVar()
+        nameedit = tk.Entry(commandframe, textvariable=self.namevar)
         nameedit.pack(fill=tk.BOTH, expand=True)
         ToolTip(nameedit, msg="change title", delay=1.0)
 
@@ -241,7 +252,7 @@ class NoteFrame(ttk.Frame):
 
     def update_view(self):
         contents = self.text.get(1.0, tk.END)
-        html = markdown.markdown(contents)
+        html = markdown.markdown(contents, extensions=['tables'])
         self.frame.load_html(html)
 
     def update(self):
@@ -249,18 +260,21 @@ class NoteFrame(ttk.Frame):
         if self.note.isvalid:
             self.enable(True)
             contents = self.note.contents()
-            html = markdown.markdown(contents)
+            html = markdown.markdown(contents, extensions=['tables'])
             self.frame.load_html(html)
             self.text.delete(1.0, tk.END)
             self.text.insert(tk.END, contents)
+            self.namevar.set(self.note.name())
         else:
-            self.frame.load("")
+            self.frame.load_html("")
+            self.namevar.set("")
             self.text.delete(1.0, tk.END)
             self.enable(False)
 
     def save(self):
         contents = self.text.get(1.0, tk.END)
         self.note.contents(contents)
+        self.note.name(self.namevar.get())
 
 
 
