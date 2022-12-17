@@ -342,6 +342,7 @@ class NoteFrame(ttk.Frame):
         contents = self.text.get(1.0, tk.END)
         html = markdown.markdown(contents, extensions=['tables'])
         self.frame.load_html(html, base_url="file://%s/" % self.note.base_path())
+        self.frame.add_css(CSS)
 
     def update(self):
         self.note = self.model.selected_note()
@@ -350,6 +351,7 @@ class NoteFrame(ttk.Frame):
             contents = self.note.contents()
             html = markdown.markdown(contents, extensions=['tables'])
             self.frame.load_html(html, base_url="file://%s/" % self.note.base_path())
+            self.frame.add_css(CSS)
             self.text.delete(1.0, tk.END)
             self.text.insert(tk.END, contents)
             self.namevar.set(self.note.name())
@@ -373,7 +375,7 @@ class NoteFrame(ttk.Frame):
     def screenshot(self):
         filename = self.note.screenshot()
         if None != filename:
-            self.text.insert(tk.INSERT, "![screenshot](%s)\n" % filename)
+            self.text.insert(tk.INSERT, "![screenshot](%s)\n\n" % filename)
             self.update_view()
             self.text.focus_set()
         else:
@@ -465,6 +467,28 @@ ICONFONT = (
     "AAAAAAIAAAAAAAD/tQAyAAAAAQAAAAAAAAAAAAAAAAAAAAAACAAAAAEAAgEC"
     "AQMBBAEFAQYGcGx1cy0yBGxvb2sGY2FtZXJhDXNwaW5uZXItYWx0LTMDYmlu"
     "AAAAAAH//wACAAAAAQAAAADeBipuAAAAAN/Ch6oAAAAA38KHqg==")
+
+CSS="""
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+
+blockquote {
+    background-color: #e0e0e0;
+}
+
+pre code {
+    background-color: #e0e0e0;
+    font-family: monospace;
+    display: block;
+}
+
+p code {
+    font-family: monospace;
+    color: #c03030;
+}
+"""
 
 if __name__ == "__main__":
     app = App()
