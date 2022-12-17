@@ -73,6 +73,10 @@ class Persistence:
         filename_new = self._note_filename(newname)
         os.rename(filename_old, filename_new)
 
+    def remove_note(self, name):
+        filename = self._note_filename(name)
+        os.remove(filename)
+
 
 #-------------------------------------------
 # Model
@@ -93,33 +97,36 @@ class ModelEvent:
             subscriber()
 
 class Note:
-    def __init__(self, persistence, name, isvalid=True):
+    def __init__(self, parent, persistence, name, isvalid=True):
+        self.__parent = parent
         self.__persistence = persistence
         self.__name = name
         self.__contents = self.__persistence.read_note(self.__name)
-        self.name_changed = ModelEvent()
-        self.contents_changed = ModelEvent()
         self.isvalid = isvalid
 
     def __repr__(self):
         return self.__name
 
     def name(self, value=None):
-        if None != value and value != self.__name:
+        if self.isvalid and None != value and value != self.__name:
             self.__persistence.rename_note(self.__name, value)
             self.__name = value
-            self.name_changed.fire()
+            self.__parent.note_changed()
         return self.__name
 
     def contents(self, value=None):
-        if None != value:
+        if self.isvalid and None != value:
             self.__persistence.write_note(self.__name, value)
             self.__contents = value
-            self.contents_changed.fire()
         return self.__contents
 
     def matches(self, filter):
-        return filter.lower() in self.__name.lower()
+        return self.isvalid and filter.lower() in self.__name.lower()
+    
+    def delete(self):
+        self.isvalid = False
+        self.__persistence.remove_note(self.__name)
+        self.__parent.note_changed()
 
 class NoteCollection:
     def __init__(self, persistence):
@@ -127,11 +134,11 @@ class NoteCollection:
         self.notes = dict()
         note_names = self.__persistence.list_notes()
         for name in note_names:
-            note = Note(self.__persistence, name)
+            note = Note(self, self.__persistence, name)
             self.notes[name] = note
         self.on_changed = ModelEvent()
         self.on_selection_changed = ModelEvent()
-        self.invalid_note = Note(self.__persistence, "", isvalid=False)
+        self.invalid_note = Note(self, self.__persistence, "", isvalid=False)
         self._selected_note = self.invalid_note
     
     def _generate_name(self):
@@ -158,15 +165,14 @@ class NoteCollection:
 
     def add_new(self):
         name = self._generate_name()
-        note = Note(self.__persistence, name)
+        note = Note(self, self.__persistence, name)
         self.notes[name] = note
-        note.name_changed.subscribe(self.note_changed)
         self.on_changed.fire()
 
     def note_changed(self):
         self._rebuild_index()
         self.on_changed.fire()
-
+    
     def selected_note(self):
         return self._selected_note
 
@@ -287,7 +293,7 @@ class NoteFrame(ttk.Frame):
 
         editframe = tk.Frame(self.notebook)
         commandframe = ttk.Frame(editframe)
-        deletebutton = ttk.Button(commandframe, image=icons.delete)
+        deletebutton = ttk.Button(commandframe, image=icons.delete, command = self.delete)
         deletebutton.pack(side=tk.RIGHT)
         ToolTip(deletebutton, msg="remove this note", delay=1.0)
         updatebutton = ttk.Button(commandframe, image=icons.save, command = self.save)
@@ -339,6 +345,12 @@ class NoteFrame(ttk.Frame):
         contents = self.text.get(1.0, tk.END)
         self.note.contents(contents)
         self.note.name(self.namevar.get())
+
+    def delete(self):
+        confirmed = tk.messagebox.askyesno(title="note.py", message="Do you want to remove this note?")
+        if confirmed:
+            self.note.delete()
+            self.update()
 
 
 
