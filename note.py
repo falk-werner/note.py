@@ -13,6 +13,7 @@ import io
 import markdown
 import webbrowser
 import base64
+import uuid
 from tkinterweb import HtmlFrame
 from tkinter import scrolledtext
 from tkinter import ttk
@@ -45,6 +46,9 @@ class Persistence:
     
     def relative_assetspath(self):
         return "assets"
+
+    def notespath(self):
+        return self._notespath
     
     def list_notes(self):
         notes = []
@@ -76,6 +80,14 @@ class Persistence:
     def remove_note(self, name):
         filename = self._note_filename(name)
         os.remove(filename)
+
+    def screenshot(self):
+        filename = "screenshot_" + str(uuid.uuid4()) + ".png"
+        full_filename = os.path.join(self._assetspath, filename)
+        status = os.system('gnome-screenshot -a -f %s' % full_filename)
+        exit_code = os.waitstatus_to_exitcode(status)
+        return os.path.join(self.relative_assetspath(), filename) if 0 == exit_code else None
+        
 
 
 #-------------------------------------------
@@ -127,6 +139,13 @@ class Note:
         self.isvalid = False
         self.__persistence.remove_note(self.__name)
         self.__parent.note_changed()
+
+    def screenshot(self):
+        return self.__persistence.screenshot() if self.isvalid else None
+
+    def base_path(self):
+        return self.__persistence.notespath()
+
 
 class NoteCollection:
     def __init__(self, persistence):
@@ -285,9 +304,8 @@ class NoteFrame(ttk.Frame):
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
         self.frame = HtmlFrame(self.notebook, messages_enabled=False)
-        #frame.on_link_click(clicked)
-        html = markdown.markdown('', extensions=['tables'])
-        self.frame.load_html(html)
+        self.frame.on_link_click(self.link_clicked)
+        self.frame.load_html("")
         self.frame.pack(fill=tk.BOTH, expand=1)
         self.notebook.add(self.frame, text='View')
 
@@ -299,7 +317,7 @@ class NoteFrame(ttk.Frame):
         updatebutton = ttk.Button(commandframe, image=icons.save, command = self.save)
         updatebutton.pack(side=tk.RIGHT)
         ToolTip(updatebutton, msg="sync changes", delay=1.0)
-        screenshotbutton = ttk.Button(commandframe, image=icons.screenshot)
+        screenshotbutton = ttk.Button(commandframe, image=icons.screenshot, command = self.screenshot)
         screenshotbutton.pack(side=tk.RIGHT, padx=5)
         ToolTip(screenshotbutton, msg="take screenshot", delay=1.0)
         self.namevar = tk.StringVar()
@@ -323,7 +341,7 @@ class NoteFrame(ttk.Frame):
     def update_view(self):
         contents = self.text.get(1.0, tk.END)
         html = markdown.markdown(contents, extensions=['tables'])
-        self.frame.load_html(html)
+        self.frame.load_html(html, base_url="file://%s/" % self.note.base_path())
 
     def update(self):
         self.note = self.model.selected_note()
@@ -331,7 +349,7 @@ class NoteFrame(ttk.Frame):
             self.enable(True)
             contents = self.note.contents()
             html = markdown.markdown(contents, extensions=['tables'])
-            self.frame.load_html(html)
+            self.frame.load_html(html, base_url="file://%s/" % self.note.base_path())
             self.text.delete(1.0, tk.END)
             self.text.insert(tk.END, contents)
             self.namevar.set(self.note.name())
@@ -352,6 +370,17 @@ class NoteFrame(ttk.Frame):
             self.note.delete()
             self.update()
 
+    def screenshot(self):
+        filename = self.note.screenshot()
+        if None != filename:
+            self.text.insert(tk.INSERT, "![screenshot](%s)\n" % filename)
+            self.update_view()
+            self.text.focus_set()
+        else:
+            tk.messagebox.showerror(title="note.py", message="Failed to create screenshot.\nCheck that gnome-screenshot is installed.")
+
+    def link_clicked(self, url):
+        webbrowser.open(url)
 
 
 class App:
