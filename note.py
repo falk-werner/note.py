@@ -18,6 +18,61 @@ from tkinter import scrolledtext
 from tkinter import ttk
 from tktooltip import ToolTip
 from PIL import ImageFont, ImageDraw, Image, ImageTk
+from pathlib import Path
+
+#-------------------------------------------
+# Persistence
+#-------------------------------------------
+
+class Persistence:
+    def __init__(self):
+        self._basepath = os.path.join(Path.home(), ".notepy")
+        self._mkdir(self._basepath)
+        self._notespath = os.path.join(self._basepath, "notes")
+        self._mkdir(self._notespath)
+        self._assetspath = os.path.join(self._notespath, self.relative_assetspath())
+        self._mkdir(self._assetspath)
+    
+    def _mkdir(self, path):
+        if not os.path.isdir(path):
+            os.mkdir(path)
+
+    def _note_filename(self, name):
+        return os.path.join(self._notespath, name + ".md")
+    
+    def assetspath(self):
+        return self._assetspath
+    
+    def relative_assetspath(self):
+        return "assets"
+    
+    def list_notes(self):
+        notes = []
+        for filename in os.listdir(self._notespath):
+            fullpath = os.path.join(self._notespath, filename)
+            if os.path.isfile(fullpath) and filename.endswith(".md"):
+                notes.append(os.path.splitext(filename)[0])
+        return notes
+
+    def read_note(self, name):
+        filename = self._note_filename(name)
+        if os.path.isfile(filename):
+            with open(filename, "rb") as f:
+                data = f.read().decode("utf-8")
+            return data
+        else:
+            return ""
+    
+    def write_note(self, name, text):
+        filename = self._note_filename(name)
+        with open(filename, "wb") as f:
+            f.write(text.encode("utf-8"))
+    
+    def rename_note(self, oldname, newname):
+        filename_old = self._note_filename(oldname)
+        filename_new = self._note_filename(newname)
+        os.rename(filename_old, filename_new)
+
 
 #-------------------------------------------
 # Model
@@ -38,9 +93,10 @@ class ModelEvent:
             subscriber()
 
 class Note:
-    def __init__(self, name, isvalid=True):
+    def __init__(self, persistence, name, isvalid=True):
+        self.__persistence = persistence
         self.__name = name
-        self.__contents = ""
+        self.__contents = self.__persistence.read_note(self.__name)
         self.name_changed = ModelEvent()
         self.contents_changed = ModelEvent()
         self.isvalid = isvalid
@@ -49,13 +105,15 @@ class Note:
         return self.__name
 
     def name(self, value=None):
-        if None != value:
+        if None != value and value != self.__name:
+            self.__persistence.rename_note(self.__name, value)
             self.__name = value
             self.name_changed.fire()
         return self.__name
 
     def contents(self, value=None):
         if None != value:
+            self.__persistence.write_note(self.__name, value)
             self.__contents = value
             self.contents_changed.fire()
         return self.__contents
@@ -64,11 +122,16 @@ class Note:
         return filter.lower() in self.__name.lower()
 
 class NoteCollection:
-    def __init__(self):
+    def __init__(self, persistence):
+        self.__persistence = persistence
         self.notes = dict()
+        note_names = self.__persistence.list_notes()
+        for name in note_names:
+            note = Note(self.__persistence, name)
+            self.notes[name] = note
         self.on_changed = ModelEvent()
         self.on_selection_changed = ModelEvent()
-        self.invalid_note = Note("", isvalid=False)
+        self.invalid_note = Note(self.__persistence, "", isvalid=False)
         self._selected_note = self.invalid_note
     
     def _generate_name(self):
@@ -95,7 +158,7 @@ class NoteCollection:
 
     def add_new(self):
         name = self._generate_name()
-        note = Note(name)
+        note = Note(self.__persistence, name)
         self.notes[name] = note
         note.name_changed.subscribe(self.note_changed)
         self.on_changed.fire()
@@ -112,10 +175,11 @@ class NoteCollection:
         self.on_selection_changed.fire()
 
 class AppModel:
-    def __init__(self):
+    def __init__(self, persistence=Persistence()):
         self.__name = "note.py"
         self.__geometry = "800x600"
-        self.notes = NoteCollection()
+        self.__persistence = persistence
+        self.notes = NoteCollection(persistence)
 
     def get_name(self):
         return self.__name
