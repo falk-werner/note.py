@@ -384,7 +384,7 @@ class NoteFrame(ttk.Frame):
         contents = self.text.get(1.0, tk.END)
         html = markdown.markdown(contents, extensions=['tables'])
         self.frame.load_html(html, base_url="file://%s/" % self.note.base_path())
-        self.frame.add_css(self.nore.css())
+        self.frame.add_css(self.note.css())
 
     def update(self):
         self.save()
