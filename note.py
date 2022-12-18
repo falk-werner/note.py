@@ -423,7 +423,6 @@ class NoteFrame(ttk.Frame):
         filename = self.note.screenshot()
         if None != filename:
             self.text.insert(tk.INSERT, "![screenshot](%s)\n\n" % filename)
-            self.update_view()
             self.text.focus_set()
         else:
             tk.messagebox.showerror(title="note.py", message="Failed to create screenshot.\nCheck that gnome-screenshot is installed.")
