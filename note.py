@@ -14,6 +14,7 @@ import markdown
 import webbrowser
 import base64
 import uuid
+import shutil
 from tkinterweb import HtmlFrame
 from tkinter import scrolledtext
 from tkinter import ttk
@@ -27,67 +28,62 @@ from pathlib import Path
 
 class Persistence:
     def __init__(self):
-        self._basepath = os.path.join(Path.home(), ".notepy")
-        self._mkdir(self._basepath)
-        self._notespath = os.path.join(self._basepath, "notes")
-        self._mkdir(self._notespath)
-        self._assetspath = os.path.join(self._notespath, self.relative_assetspath())
-        self._mkdir(self._assetspath)
+        self.__basepath = os.path.join(Path.home(), ".notepy")
+        self.__mkdir(self.__basepath)
+        self.__notespath = os.path.join(self.__basepath, "notes")
+        self.__mkdir(self.__notespath)
     
-    def _mkdir(self, path):
+    def __mkdir(self, path):
         if not os.path.isdir(path):
             os.mkdir(path)
 
-    def _note_filename(self, name):
-        return os.path.join(self._notespath, name + ".md")
+    def __note_filename(self, name):
+        return os.path.join(self.__notespath, name, "note.md")
     
-    def assetspath(self):
-        return self._assetspath
-    
-    def relative_assetspath(self):
-        return "assets"
-
     def notespath(self):
         return self._notespath
+
+    def note_path(self, name):
+        return os.path.join(self.__notespath, name)
     
     def list_notes(self):
         notes = []
-        for filename in os.listdir(self._notespath):
-            fullpath = os.path.join(self._notespath, filename)
-            if os.path.isfile(fullpath) and filename.endswith(".md"):
-                notes.append(os.path.splitext(filename)[0])
+        for name in os.listdir(self.__notespath):
+            notefile = self.__note_filename(name)
+            if os.path.isfile(notefile):
+                notes.append(name)
         return notes
 
     def read_note(self, name):
-        filename = self._note_filename(name)
-        if os.path.isfile(filename):
-            with open(filename, "rb") as f:
-                data = f.read().decode("utf-8")
-            return data
-        else:
-            return ""
+        filename = self.__note_filename(name)
+        if not os.path.isfile(filename):
+            self.write_note(name, "")
+        with open(filename, "rb") as f:
+            data = f.read().decode("utf-8")
+        return data
     
     def write_note(self, name, text):
-        filename = self._note_filename(name)
+        self.__mkdir(self.note_path(name))
+        filename = self.__note_filename(name)
         with open(filename, "wb") as f:
             f.write(text.encode("utf-8"))
     
     def rename_note(self, oldname, newname):
-        filename_old = self._note_filename(oldname)
-        filename_new = self._note_filename(newname)
-        os.rename(filename_old, filename_new)
+        old_path = self.note_path(oldname)
+        new_path = self.note_path(newname)
+        os.rename(old_path, new_path)
 
     def remove_note(self, name):
-        filename = self._note_filename(name)
-        if os.path.isfile(filename):
-            os.remove(filename)
+        note_path = self.note_path(name)
+        if os.path.isdir(note_path):
+            shutil.rmtree(note_path)
 
-    def screenshot(self):
+    def screenshot(self, name):
         filename = "screenshot_" + str(uuid.uuid4()) + ".png"
-        full_filename = os.path.join(self._assetspath, filename)
+        full_filename = os.path.join(self.note_path(name), filename)
         status = os.system('gnome-screenshot -a -f %s' % full_filename)
         exit_code = os.waitstatus_to_exitcode(status)
-        return os.path.join(self.relative_assetspath(), filename) if 0 == exit_code else None
+        return filename if 0 == exit_code else None
         
 
 
@@ -114,8 +110,9 @@ class Note:
         self.__parent = parent
         self.__persistence = persistence
         self.__name = name
-        self.__contents = self.__persistence.read_note(self.__name)
+        self.__contents = self.__persistence.read_note(self.__name) if isvalid else ""
         self.isvalid = isvalid
+            
 
     def __repr__(self):
         return self.__name
@@ -142,10 +139,10 @@ class Note:
         self.__parent.note_changed()
 
     def screenshot(self):
-        return self.__persistence.screenshot() if self.isvalid else None
+        return self.__persistence.screenshot(self.__name) if self.isvalid else None
 
     def base_path(self):
-        return self.__persistence.notespath()
+        return self.__persistence.note_path(self.__name)
 
 
 class NoteCollection:
@@ -415,7 +412,10 @@ class App:
         self.root.bind("<Control-p>", lambda e: self.noteframe.screenshot())
 
     def onclose(self):
-        self.noteframe.save()
+        try:
+            self.noteframe.save()
+        except:
+            print("error: failed to save note")
         self.root.destroy()
 
     def run(self):
