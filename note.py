@@ -376,6 +376,8 @@ class NoteFrame(ttk.Frame):
         self.activateable_widgets = [ updatebutton, deletebutton, screenshotbutton, nameedit, self.text]
         self.enable(False)
 
+        self.notebook.bind("<<NotebookTabChanged>>", self.tab_changed)
+
     def enable(self, value=True):
         for widget in self.activateable_widgets:
             widget.configure(state="normal" if value == True else "disabled")
@@ -427,6 +429,9 @@ class NoteFrame(ttk.Frame):
 
     def link_clicked(self, url):
         webbrowser.open(url)
+
+    def tab_changed(self, event):
+        self.save()
 
 
 class App:
