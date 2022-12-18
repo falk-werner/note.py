@@ -345,6 +345,7 @@ class NoteFrame(ttk.Frame):
         self.frame.add_css(CSS)
 
     def update(self):
+        self.save()
         self.note = self.model.selected_note()
         if self.note.isvalid:
             self.enable(True)
@@ -362,9 +363,10 @@ class NoteFrame(ttk.Frame):
             self.enable(False)
 
     def save(self):
-        contents = self.text.get(1.0, tk.END)
-        self.note.contents(contents)
-        self.note.name(self.namevar.get())
+        if self.note != None and self.note.isvalid:
+            contents = self.text.get(1.0, tk.END)
+            self.note.contents(contents)
+            self.note.name(self.namevar.get())
 
     def delete(self):
         confirmed = tk.messagebox.askyesno(title="note.py", message="Do you want to remove this note?")
@@ -403,8 +405,13 @@ class App:
         self.noteframe.pack(fill=tk.BOTH, expand=True)
         self.splitPane.add(self.noteframe)
 
+    def onclose(self):
+        self.noteframe.save()
+        self.root.destroy()
+
     def run(self):
-        self.root.mainloop()   
+        self.root.protocol("WM_DELETE_WINDOW", self.onclose)
+        self.root.mainloop()
 
 ICONFONT = (
     "AAEAAAANAIAAAwBQRkZUTZ2LOcMAAApoAAAAHE9TLzJEjmFkAAABWAAAAGBj"
