@@ -79,7 +79,8 @@ class Persistence:
 
     def remove_note(self, name):
         filename = self._note_filename(name)
-        os.remove(filename)
+        if os.path.isfile(filename):
+            os.remove(filename)
 
     def screenshot(self):
         filename = "screenshot_" + str(uuid.uuid4()) + ".png"
