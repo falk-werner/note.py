@@ -23,6 +23,32 @@ from PIL import ImageFont, ImageDraw, Image, ImageTk
 from pathlib import Path
 
 #-------------------------------------------
+# Constants
+#-------------------------------------------
+
+DEFAULT_CSS="""
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+
+blockquote {
+    background-color: #e0e0e0;
+}
+
+pre code {
+    background-color: #e0e0e0;
+    font-family: monospace;
+    display: block;
+}
+
+p code {
+    font-family: monospace;
+    color: #c03030;
+}
+"""
+
+#-------------------------------------------
 # Persistence
 #-------------------------------------------
 
@@ -32,7 +58,19 @@ class Persistence:
         self.__mkdir(self.__basepath)
         self.__notespath = os.path.join(self.__basepath, "notes")
         self.__mkdir(self.__notespath)
+        self.__css = self.__load_css()
     
+    def __load_css(self):
+        css_file = os.path.join(self.__basepath, "style.css")
+        if os.path.isfile(css_file):
+            with open(css_file, "rb") as f:
+                css = f.read().decode("utf-8")
+        else:
+            css = DEFAULT_CSS
+            with open(css_file, "wb") as f:
+                f.write(css.encode("utf-8"))
+        return css
+
     def __mkdir(self, path):
         if not os.path.isdir(path):
             os.mkdir(path)
@@ -84,8 +122,9 @@ class Persistence:
         status = os.system('gnome-screenshot -a -f %s' % full_filename)
         exit_code = os.waitstatus_to_exitcode(status)
         return filename if 0 == exit_code else None
-        
 
+    def css(self):
+        return self.__css
 
 #-------------------------------------------
 # Model
@@ -143,6 +182,9 @@ class Note:
 
     def base_path(self):
         return self.__persistence.note_path(self.__name)
+    
+    def css(self):
+        return self.__persistence.css()
 
 
 class NoteCollection:
@@ -342,7 +384,7 @@ class NoteFrame(ttk.Frame):
         contents = self.text.get(1.0, tk.END)
         html = markdown.markdown(contents, extensions=['tables'])
         self.frame.load_html(html, base_url="file://%s/" % self.note.base_path())
-        self.frame.add_css(CSS)
+        self.frame.add_css(self.nore.css())
 
     def update(self):
         self.save()
@@ -352,7 +394,7 @@ class NoteFrame(ttk.Frame):
             contents = self.note.contents()
             html = markdown.markdown(contents, extensions=['tables'])
             self.frame.load_html(html, base_url="file://%s/" % self.note.base_path())
-            self.frame.add_css(CSS)
+            self.frame.add_css(self.note.css())
             self.text.delete(1.0, tk.END)
             self.text.insert(tk.END, contents)
             self.namevar.set(self.note.name())
@@ -489,28 +531,6 @@ ICONFONT = (
     "AAAAAAD/tQAyAAAAAQAAAAAAAAAAAAAAAAAAAAAACQAAAAEAAgECAQMBBAEF"
     "AQYBBwZwbHVzLTIGcGFwZXJzBGxvb2sGY2FtZXJhDXNwaW5uZXItYWx0LTMD"
     "YmluAAAAAf//AAIAAAABAAAAAN4GKm4AAAAA38SxUQAAAADfxLFR")
-
-CSS="""
-table, th, td {
-    border: 1px solid black;
-    border-collapse: collapse;
-}
-
-blockquote {
-    background-color: #e0e0e0;
-}
-
-pre code {
-    background-color: #e0e0e0;
-    font-family: monospace;
-    display: block;
-}
-
-p code {
-    font-family: monospace;
-    color: #c03030;
-}
-"""
 
 if __name__ == "__main__":
     app = App()
