@@ -431,7 +431,10 @@ class NoteFrame(ttk.Frame):
         webbrowser.open(url)
 
     def tab_changed(self, event):
-        self.save()
+        tab = self.notebook.index(self.notebook.select())
+        # save notes if changing from edit to view tab
+        if tab == 0:
+            self.save()
 
 
 class App:
