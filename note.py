@@ -408,6 +408,11 @@ class App:
         self.noteframe.pack(fill=tk.BOTH, expand=True)
         self.splitPane.add(self.noteframe)
 
+        self.root.bind("<Control-q>", lambda e: self.root.quit())
+        self.root.bind("<Control-n>", lambda e: model.notes.add_new())
+        self.root.bind("<Control-s>", lambda e: self.noteframe.save())
+        self.root.bind("<Control-p>", lambda e: self.noteframe.screenshot())
+
     def onclose(self):
         self.noteframe.save()
         self.root.destroy()
