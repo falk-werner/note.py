@@ -6,7 +6,7 @@ import base64
 import sys
 
 def convert(fontname):
-    glyphs = ["plus", "look", "camera", "spinner-alt-3", "bin"]
+    glyphs = ["plus", "papers", "look", "camera", "spinner-alt-3", "bin"]
 
     new_name = fontname + ".min.ttf"
     base_font = fontforge.open(fontname)
@@ -53,7 +53,7 @@ def find_glyph_names(fontname):
         slot = font.findEncodingSlot(glyph)
         slot_map[slot] = glyph
 
-    slots = [ 0xefc2, 0xef7f, 0xeecf, 0xeff6, 0xeebb ]
+    slots = [ 0xefc2, 0xefb6, 0xef7f, 0xeecf, 0xeff6, 0xeebb ]
     for slot in slots:
         if slot in slot_map:
             glyph = slot_map[slot]
