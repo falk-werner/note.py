@@ -6,10 +6,10 @@
 
 `note.py` has two operation modes:
 
-- **View mode*** to view existing notes
+- **View mode** to view existing notes
 - **Edit mode** to edit new or alter existing notes
 
-You can switch between the to modes using tabs.
+You can switch between the two modes using tabs.
 
 ### View Mode
 
@@ -45,11 +45,11 @@ There are some key bindings to speed up some tasks:
 
 ## Customize View
 
-You can customize the vie using CSS. Therefore, just edit the file `$HOME/.notepy/style.css` as desired. To return to defaults, simply delete this file as `note.py` will re-create it during the next start.
+You can customize the view using CSS. Therefore, just edit the file `$HOME/.notepy/style.css` as desired. To return to defaults, simply delete this file as `note.py` will re-create it during the next start.
 
 ## Under the hood
 
-All notes manages by `note.py` are stored in the directory `$HOME/.notepy/notes`. There is a directory for each note according to the notes name. Each note has a file `note.md` containing the contents of the notes. Screenshots are also stored in the note directory.
+All notes managed by `note.py` are stored in the directory `$HOME/.notepy/notes`. There is a directory for each note according to the notes name. Each note has a file `note.md` containing the contents of the notes. Screenshots are also stored in the note directory.
 
 ## Requirements
 
@@ -67,7 +67,7 @@ You can installe these modules using the [requiremnts.txt](requirements.txt) fil
 
     pip install -r requirements.txt
 
-In oder to create screenshots, [gnome-screenshot](https://linux.die.net/man/1/gnome-screenshot) has the be installed on the system.
+In oder to create screenshots, [gnome-screenshot](https://linux.die.net/man/1/gnome-screenshot) has to be installed on the system.
 
 ## Other 3rd party stuff
 
