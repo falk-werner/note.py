@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+"""note.py: Yet another note taking app"""
+
 # Copyright (c) 2022 Falk Werner
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,20 +9,19 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import tkinter as tk
-import ctypes
 import os
 import io
-import markdown
 import webbrowser
 import base64
 import uuid
 import shutil
-from tkinterweb import HtmlFrame
+from pathlib import Path
 from tkinter import scrolledtext
 from tkinter import ttk
 from tktooltip import ToolTip
 from PIL import ImageFont, ImageDraw, Image, ImageTk
-from pathlib import Path
+from tkinterweb import HtmlFrame
+import markdown
 
 #-------------------------------------------
 # Constants
@@ -53,22 +54,24 @@ p code {
 #-------------------------------------------
 
 class Persistence:
+    """Persistence handling"""
+
     def __init__(self):
         self.__basepath = os.path.join(Path.home(), ".notepy")
         self.__mkdir(self.__basepath)
         self.__notespath = os.path.join(self.__basepath, "notes")
         self.__mkdir(self.__notespath)
         self.__css = self.__load_css()
-    
+
     def __load_css(self):
-        css_file = os.path.join(self.__basepath, "style.css")
-        if os.path.isfile(css_file):
-            with open(css_file, "rb") as f:
-                css = f.read().decode("utf-8")
+        css_filename = os.path.join(self.__basepath, "style.css")
+        if os.path.isfile(css_filename):
+            with open(css_filename, "rb") as css_file:
+                css = css_file.read().decode("utf-8")
         else:
             css = DEFAULT_CSS
-            with open(css_file, "wb") as f:
-                f.write(css.encode("utf-8"))
+            with open(css_filename, "wb") as css_file:
+                css_file.write(css.encode("utf-8"))
         return css
 
     def __mkdir(self, path):
@@ -77,14 +80,13 @@ class Persistence:
 
     def __note_filename(self, name):
         return os.path.join(self.__notespath, name, "note.md")
-    
-    def notespath(self):
-        return self._notespath
 
     def note_path(self, name):
+        """Return the directory of a give note"""
         return os.path.join(self.__notespath, name)
-    
+
     def list_notes(self):
+        """Returns a list of all notes"""
         notes = []
         for name in os.listdir(self.__notespath):
             notefile = self.__note_filename(name)
@@ -93,37 +95,43 @@ class Persistence:
         return notes
 
     def read_note(self, name):
+        """Returns the contents of a note. Non-existing notes will be created"""
         filename = self.__note_filename(name)
         if not os.path.isfile(filename):
             self.write_note(name, "")
-        with open(filename, "rb") as f:
-            data = f.read().decode("utf-8")
+        with open(filename, "rb") as note_file:
+            data = note_file.read().decode("utf-8")
         return data
-    
+
     def write_note(self, name, text):
+        """Writes the contents of a note to note file."""
         self.__mkdir(self.note_path(name))
         filename = self.__note_filename(name)
-        with open(filename, "wb") as f:
-            f.write(text.encode("utf-8"))
-    
+        with open(filename, "wb") as note_file:
+            note_file.write(text.encode("utf-8"))
+
     def rename_note(self, oldname, newname):
+        """Renames a note in the filesystem."""
         old_path = self.note_path(oldname)
         new_path = self.note_path(newname)
         os.rename(old_path, new_path)
 
     def remove_note(self, name):
+        """Removed a note (including all related files)."""
         note_path = self.note_path(name)
         if os.path.isdir(note_path):
             shutil.rmtree(note_path)
 
     def screenshot(self, name):
+        """Takes a screenshot and returns it's filename."""
         filename = "screenshot_" + str(uuid.uuid4()) + ".png"
         full_filename = os.path.join(self.note_path(name), filename)
-        status = os.system('gnome-screenshot -a -f %s' % full_filename)
+        status = os.system(f'gnome-screenshot -a -f {full_filename}')
         exit_code = os.waitstatus_to_exitcode(status)
         return filename if 0 == exit_code else None
 
     def css(self):
+        """Returns the CSS for the webview."""
         return self.__css
 
 #-------------------------------------------
@@ -131,66 +139,80 @@ class Persistence:
 #-------------------------------------------
 
 class ModelEvent:
+    """Basic model event."""
     def __init__(self):
         self.subscribers = []
-    
+
     def subscribe(self, subscriber):
+        """Subscribe to the event."""
         self.subscribers.append(subscriber)
-    
+
     def unsubscribe(self, subscriber):
+        """Revoke subscription."""
         self.subscribers.remove(subscriber)
-    
+
     def fire(self):
+        """Inform all subscibers-"""
         for subscriber in self.subscribers:
             subscriber()
 
 class Note:
+    """Contains all business logic of a note."""
     def __init__(self, parent, persistence, name, isvalid=True):
         self.__parent = parent
         self.__persistence = persistence
         self.__name = name
         self.__contents = self.__persistence.read_note(self.__name) if isvalid else ""
         self.isvalid = isvalid
-            
+
 
     def __repr__(self):
         return self.__name
 
     def name(self, value=None):
-        if self.isvalid and None != value and value != self.__name:
+        """Reads or sets the name of a note."""
+        if self.isvalid and value is not None and value != self.__name:
             self.__persistence.rename_note(self.__name, value)
             self.__name = value
             self.__parent.note_changed()
         return self.__name
 
     def contents(self, value=None):
-        if self.isvalid and None != value:
+        """Reads or writes the contents of a note."""
+        if self.isvalid and value is not None:
             self.__persistence.write_note(self.__name, value)
             self.__contents = value
         return self.__contents
 
-    def matches(self, filter):
-        return self.isvalid and filter.lower() in self.__name.lower()
-    
+    def matches(self, note_filter):
+        """"Returns True, when the note matches the filter."""
+        return self.isvalid and note_filter.lower() in self.__name.lower()
+
     def delete(self):
+        """Deletes the note and all related files."""
         self.isvalid = False
         self.__persistence.remove_note(self.__name)
         self.__parent.note_changed()
 
     def screenshot(self):
+        """Takes a screenshot and return the filename."""
         return self.__persistence.screenshot(self.__name) if self.isvalid else None
 
     def base_path(self):
+        """Returns the directory of the note."""
         return self.__persistence.note_path(self.__name)
-    
+
     def css(self):
+        """Returns the CSS for the note.
+        All notes share the same CSS yet, but this may change in future."""
         return self.__persistence.css()
 
 
 class NoteCollection:
+    """Business logic of a collection of notes."""
     def __init__(self, persistence):
         self.__persistence = persistence
-        self.notes = dict()
+        self.notes = {}
         note_names = self.__persistence.list_notes()
         for name in note_names:
             note = Note(self, self.__persistence, name)
@@ -199,57 +221,65 @@ class NoteCollection:
         self.on_selection_changed = ModelEvent()
         self.invalid_note = Note(self, self.__persistence, "", isvalid=False)
         self._selected_note = self.invalid_note
-    
+
     def _generate_name(self):
         name = "Untitled"
         number = 0
         while name in self.notes:
             number += 1
-            name = "Untitled %d" % (number)
+            name = f"Untitled {number}"
         return name
 
     def _rebuild_index(self):
-        notes = dict()
+        notes = {}
         for note in self.notes.values():
             notes[note.name()] = note
         self.notes = notes
 
-    def query(self, filter="", reverse=False):
+    def query(self, note_filter="", reverse=False):
+        """Returns an ordered list of all notes that matches the filter."""
         notes = []
         for note in self.notes.values():
-            if note.matches(filter):
+            if note.matches(note_filter):
                 notes.append(note)
         notes.sort(key=lambda note: note.name(), reverse=reverse)
         return notes
 
     def add_new(self):
+        """Add a new note to the collection."""
         name = self._generate_name()
         note = Note(self, self.__persistence, name)
         self.notes[name] = note
         self.on_changed.fire()
 
     def note_changed(self):
+        """Is called by notes only to inform about changes."""
         self._rebuild_index()
         self.on_changed.fire()
-    
+
     def selected_note(self):
+        """Returns the currently selected note."""
         return self._selected_note
 
     def select(self, note_name):
-        self._selected_note = self.notes[note_name] if note_name != None and note_name in self.notes else self.invalid_note
+        """Selects a note."""
+        self._selected_note = self.notes[note_name] \
+            if note_name is not None and note_name in self.notes else self.invalid_note
         self.on_selection_changed.fire()
 
 class AppModel:
+    """Business logic of the application itself."""
     def __init__(self, persistence=Persistence()):
         self.__name = "note.py"
         self.__geometry = "800x600"
-        self.__persistence = persistence
         self.notes = NoteCollection(persistence)
 
     def get_name(self):
+        """Returns the name of the app."""
         return self.__name
 
     def get_geometry(self):
+        """Returns the size of the main window."""
         return self.__geometry
 
 
@@ -258,19 +288,22 @@ class AppModel:
 # Widgets
 #-------------------------------------------
 
+# pylint: disable-next=too-few-public-methods
 class Icons:
+    """Namespace for icons"""
     def __init__(self, master):
+        _ = master
         font_data = base64.b64decode(ICONFONT)
         self.font = ImageFont.truetype(font=io.BytesIO(font_data), size=64)
-        self.app = self.draw_text("\uefb6", color="white")
+        self.app = self.__draw_text("\uefb6", color="white")
         self.font = ImageFont.truetype(font=io.BytesIO(font_data), size=20)
-        self.new = self.draw_text("\uefc2")
-        self.search = self.draw_text("\uef7f")
-        self.screenshot = self.draw_text("\ueecf")
-        self.save = self.draw_text("\ueff6")
-        self.delete = self.draw_text("\ueebb")
+        self.new = self.__draw_text("\uefc2")
+        self.search = self.__draw_text("\uef7f")
+        self.screenshot = self.__draw_text("\ueecf")
+        self.save = self.__draw_text("\ueff6")
+        self.delete = self.__draw_text("\ueebb")
 
-    def draw_text(self, value, color='black'):
+    def __draw_text(self, value, color='black'):
         left, top, right, bottom = self.font.getbbox(value)
         box = (right - left, bottom - top)
         image = Image.new(mode="RGBA", size=box)
@@ -278,16 +311,17 @@ class Icons:
         draw.text(xy=(0,0), text=value, fill=color, font=self.font, anchor="lt")
         return ImageTk.PhotoImage(image=image)
 
-
+# pylint: disable-next=too-many-instance-attributes,too-many-ancestors
 class FilterableListbox(ttk.Frame):
+    """Widget to display a filterable list of notes."""
     def __init__(self, master, model, icons):
-        tk.Frame.__init__(self, master)
+        ttk.Frame.__init__(self, master)
         self.model = model
         self.pack()
-        self.create_widgets(icons)
+        self.__create_widgets(icons)
         self.model.on_changed.subscribe(self.update)
 
-    def create_widgets(self, icons):
+    def __create_widgets(self, icons):
         self.commandframe = ttk.Frame(self)
         self.new_button = ttk.Button(self.commandframe, image=icons.new, command=self.model.add_new)
         self.new_button.pack(side = tk.RIGHT, fill=tk.X)
@@ -311,10 +345,11 @@ class FilterableListbox(ttk.Frame):
         self.update()
 
     def update(self):
-        filter = self.filter.get()
+        """Updates the displayed list of notes."""
+        note_filter = self.filter.get()
         self.listbox.delete(0, tk.END)
-        items = self.model.query(filter)
-        selected = self.model.selected_note().name() 
+        items = self.model.query(note_filter)
+        selected = self.model.selected_note().name()
         i = 0
         selected_index = -1
         for item in items:
@@ -326,22 +361,25 @@ class FilterableListbox(ttk.Frame):
             self.listbox.select_set(selected_index)
 
     def onselect(self, event):
+        """Callback when a note is selected. Used internally only."""
         selection = event.widget.curselection()
         if selection:
             index = selection[0]
             result = self.listbox.get(index)
             self.model.select(result)
 
+# pylint: disable-next=too-many-ancestors
 class NoteFrame(ttk.Frame):
+    """Widget to view and edit a single note."""
     def __init__(self, master, model, icons):
-        tk.Frame.__init__(self, master)
+        ttk.Frame.__init__(self, master)
         self.note = None
         self.model = model
         self.pack()
-        self.create_widgets(icons)
+        self.__create_widgets(icons)
         model.on_selection_changed.subscribe(self.update)
 
-    def create_widgets(self, icons):
+    def __create_widgets(self, icons):
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
@@ -359,7 +397,8 @@ class NoteFrame(ttk.Frame):
         updatebutton = ttk.Button(commandframe, image=icons.save, command = self.save)
         updatebutton.pack(side=tk.RIGHT)
         ToolTip(updatebutton, msg="sync changes", delay=1.0)
-        screenshotbutton = ttk.Button(commandframe, image=icons.screenshot, command = self.screenshot)
+        screenshotbutton = ttk.Button(commandframe, image=icons.screenshot, \
+            command = self.screenshot)
         screenshotbutton.pack(side=tk.RIGHT, padx=5)
         ToolTip(screenshotbutton, msg="take screenshot", delay=1.0)
         self.namevar = tk.StringVar()
@@ -372,30 +411,34 @@ class NoteFrame(ttk.Frame):
         self.text = scrolledtext.ScrolledText(editframe)
         self.text.pack(fill=tk.BOTH, expand=True)
         self.notebook.add(editframe, text='Edit')
-        self.activateable_widgets = [ updatebutton, deletebutton, screenshotbutton, nameedit, self.text]
+        self.activateable_widgets = [ updatebutton, deletebutton, \
+            screenshotbutton, nameedit, self.text]
         self.enable(False)
 
         self.notebook.bind("<<NotebookTabChanged>>", self.tab_changed)
 
     def enable(self, value=True):
+        """Enables or disabled all activatable sub-widgets."""
         for widget in self.activateable_widgets:
-            widget.configure(state="normal" if value == True else "disabled")
+            widget.configure(state="normal" if value is True else "disabled")
 
     def update_view(self):
-        if self.note != None:
+        """Updated the view of a note without saving it."""
+        if self.note is not None:
             contents = self.text.get(1.0, tk.END)
             html = markdown.markdown(contents, extensions=['tables'])
-            self.frame.load_html(html, base_url="file://%s/" % self.note.base_path())
+            self.frame.load_html(html, base_url=f"file://{self.note.base_path()}/")
             self.frame.add_css(self.note.css())
 
     def update(self):
+        """Update the selected note (e.g. a new note is selected)."""
         self.save()
         self.note = self.model.selected_note()
         if self.note.isvalid:
             self.enable(True)
             contents = self.note.contents()
             html = markdown.markdown(contents, extensions=['tables'])
-            self.frame.load_html(html, base_url="file://%s/" % self.note.base_path())
+            self.frame.load_html(html, base_url=f"file://{self.note.base_path()}/")
             self.frame.add_css(self.note.css())
             self.text.delete(1.0, tk.END)
             self.text.insert(tk.END, contents)
@@ -407,37 +450,46 @@ class NoteFrame(ttk.Frame):
             self.enable(False)
 
     def save(self):
-        if self.note != None and self.note.isvalid:
+        """Saves the name and contents of a note."""
+        if self.note is not None and self.note.isvalid:
             contents = self.text.get(1.0, tk.END)
             self.note.contents(contents)
             self.note.name(self.namevar.get())
             self.update_view()
 
     def delete(self):
-        confirmed = tk.messagebox.askyesno(title="note.py", message="Do you want to remove this note?")
+        """Asks if the current not should be deleted an deletes it."""
+        confirmed = tk.messagebox.askyesno(title="note.py", \
+            message="Do you want to remove this note?")
         if confirmed:
             self.note.delete()
             self.update()
 
     def screenshot(self):
+        """Takes a screenshot and insert it to the current note's contents."""
         filename = self.note.screenshot()
-        if None != filename:
-            self.text.insert(tk.INSERT, "![screenshot](%s)\n\n" % filename)
+        if filename is not None:
+            self.text.insert(tk.INSERT, \
+                f"![screenshot]({filename})\n\n")
             self.text.focus_set()
         else:
-            tk.messagebox.showerror(title="note.py", message="Failed to create screenshot.\nCheck that gnome-screenshot is installed.")
+            tk.messagebox.showerror(title="note.py", \
+                message="Failed to create screenshot.\nCheck that gnome-screenshot is installed.")
 
     def link_clicked(self, url):
+        """Opens a link in the default web-browser."""
         webbrowser.open(url)
 
-    def tab_changed(self, event):
+    def tab_changed(self, _):
+        """Saves the contents of the currently selected not,
+        when switched from edit to view mode (tab)."""
         tab = self.notebook.index(self.notebook.select())
-        # save notes if changing from edit to view tab
         if tab == 0:
             self.save()
 
 
 class App:
+    """Main class that runs the app."""
     def __init__(self, model=AppModel()):
         self.root = tk.Tk(className=model.get_name())
         self.icons = Icons(self.root)
@@ -445,16 +497,16 @@ class App:
         self.root.tk.call('wm','iconphoto', self.root._w, self.icons.app)
         self.root.geometry(model.get_geometry())
 
-        self.splitPane = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
-        self.splitPane.pack(fill=tk.BOTH, expand=True)
+        self.split_pane = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
+        self.split_pane.pack(fill=tk.BOTH, expand=True)
 
-        self.listbox = FilterableListbox(self.splitPane, model.notes, self.icons)
+        self.listbox = FilterableListbox(self.split_pane, model.notes, self.icons)
         self.listbox.pack(fill=tk.BOTH, expand=True)
-        self.splitPane.add(self.listbox)
+        self.split_pane.add(self.listbox)
 
-        self.noteframe = NoteFrame(self.splitPane, model.notes, self.icons)
+        self.noteframe = NoteFrame(self.split_pane, model.notes, self.icons)
         self.noteframe.pack(fill=tk.BOTH, expand=True)
-        self.splitPane.add(self.noteframe)
+        self.split_pane.add(self.noteframe)
 
         self.root.bind("<Control-q>", lambda e: self.root.quit())
         self.root.bind("<Control-n>", lambda e: model.notes.add_new())
@@ -462,13 +514,16 @@ class App:
         self.root.bind("<Control-p>", lambda e: self.noteframe.screenshot())
 
     def onclose(self):
+        """Saves the current note and closes the app."""
         try:
             self.noteframe.save()
+        # pylint: disable-next=bare-except
         except:
             print("error: failed to save note")
         self.root.destroy()
 
     def run(self):
+        """Runs the app."""
         self.root.protocol("WM_DELETE_WINDOW", self.onclose)
         self.root.mainloop()
 
