@@ -1,3 +1,5 @@
+[![build](https://github.com/falk-werner/note.py/actions/workflows/build.yml/badge.svg)](https://github.com/falk-werner/note.py/actions/workflows/build.yml)
+
 # note.py
 
 [note.py](https://github.com/falk-werner/note.py) is yet another note taking app. It is aimed to be minimalistic and is shipped as a single python file.
