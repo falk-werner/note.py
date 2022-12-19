@@ -371,7 +371,6 @@ class NoteFrame(ttk.Frame):
 
         self.text = scrolledtext.ScrolledText(editframe)
         self.text.pack(fill=tk.BOTH, expand=True)
-        self.text.bind('<KeyRelease>', lambda e: self.update_view())
         self.notebook.add(editframe, text='Edit')
         self.activateable_widgets = [ updatebutton, deletebutton, screenshotbutton, nameedit, self.text]
         self.enable(False)
@@ -383,10 +382,11 @@ class NoteFrame(ttk.Frame):
             widget.configure(state="normal" if value == True else "disabled")
 
     def update_view(self):
-        contents = self.text.get(1.0, tk.END)
-        html = markdown.markdown(contents, extensions=['tables'])
-        self.frame.load_html(html, base_url="file://%s/" % self.note.base_path())
-        self.frame.add_css(self.note.css())
+        if self.note != None:
+            contents = self.text.get(1.0, tk.END)
+            html = markdown.markdown(contents, extensions=['tables'])
+            self.frame.load_html(html, base_url="file://%s/" % self.note.base_path())
+            self.frame.add_css(self.note.css())
 
     def update(self):
         self.save()
@@ -411,6 +411,7 @@ class NoteFrame(ttk.Frame):
             contents = self.text.get(1.0, tk.END)
             self.note.contents(contents)
             self.note.name(self.namevar.get())
+            self.update_view()
 
     def delete(self):
         confirmed = tk.messagebox.askyesno(title="note.py", message="Do you want to remove this note?")
@@ -422,7 +423,6 @@ class NoteFrame(ttk.Frame):
         filename = self.note.screenshot()
         if None != filename:
             self.text.insert(tk.INSERT, "![screenshot](%s)\n\n" % filename)
-            self.update_view()
             self.text.focus_set()
         else:
             tk.messagebox.showerror(title="note.py", message="Failed to create screenshot.\nCheck that gnome-screenshot is installed.")
