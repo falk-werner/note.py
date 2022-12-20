@@ -458,7 +458,7 @@ class NoteFrame(ttk.Frame):
             self.update_view()
 
     def delete(self):
-        """Asks if the current not should be deleted an deletes it."""
+        """Asks, if the current note should be deleted and deletes it."""
         confirmed = tk.messagebox.askyesno(title="note.py", \
             message="Do you want to remove this note?")
         if confirmed:
