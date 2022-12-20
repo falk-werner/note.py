@@ -28,9 +28,13 @@ jobs:
         run: |
           sudo apt install python3-tk -y
           python -m pip install --upgrade pip
-          pip install pytest
+          pip install pytest pylint
           pip install -r requirements.txt
       
       - name: Test
         run: |
           pytest
+
+      - name: Lint
+        run: |
+          pylint note.py
