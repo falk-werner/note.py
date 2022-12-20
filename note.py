@@ -117,7 +117,7 @@ class Persistence:
         os.rename(old_path, new_path)
 
     def remove_note(self, name):
-        """Removed a note (including all related files)."""
+        """Removes a note (including all related files)."""
         note_path = self.note_path(name)
         if os.path.isdir(note_path):
             shutil.rmtree(note_path)
