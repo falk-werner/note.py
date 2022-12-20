@@ -481,7 +481,7 @@ class NoteFrame(ttk.Frame):
         webbrowser.open(url)
 
     def tab_changed(self, _):
-        """Saves the contents of the currently selected not,
+        """Saves the contents of the currently selected note,
         when switched from edit to view mode (tab)."""
         tab = self.notebook.index(self.notebook.select())
         if tab == 0:
