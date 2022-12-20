@@ -126,7 +126,7 @@ class Persistence:
         """Takes a screenshot and returns it's filename."""
         filename = "screenshot_" + str(uuid.uuid4()) + ".png"
         full_filename = os.path.join(self.note_path(name), filename)
-        status = os.system(f'gnome-screenshot -a -f {full_filename}')
+        status = os.system(f'gnome-screenshot -a -f "{full_filename}"')
         exit_code = os.waitstatus_to_exitcode(status)
         return filename if 0 == exit_code else None
 
