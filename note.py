@@ -418,7 +418,7 @@ class NoteFrame(ttk.Frame):
         self.notebook.bind("<<NotebookTabChanged>>", self.tab_changed)
 
     def enable(self, value=True):
-        """Enables or disabled all activatable sub-widgets."""
+        """Enables or disables all activatable sub-widgets."""
         for widget in self.activateable_widgets:
             widget.configure(state="normal" if value is True else "disabled")
 
