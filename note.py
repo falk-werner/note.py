@@ -82,7 +82,7 @@ class Persistence:
         return os.path.join(self.__notespath, name, "note.md")
 
     def note_path(self, name):
-        """Return the directory of a give note"""
+        """Return the directory of a given note"""
         return os.path.join(self.__notespath, name)
 
     def list_notes(self):
