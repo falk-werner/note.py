@@ -423,7 +423,7 @@ class NoteFrame(ttk.Frame):
             widget.configure(state="normal" if value is True else "disabled")
 
     def update_view(self):
-        """Updated the view of a note without saving it."""
+        """Updates the view of a note without saving it."""
         if self.note is not None:
             contents = self.text.get(1.0, tk.END)
             html = markdown.markdown(contents, extensions=['tables'])
