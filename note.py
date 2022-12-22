@@ -378,6 +378,8 @@ class NoteFrame(ttk.Frame):
         self.pack()
         self.__create_widgets(icons)
         model.on_selection_changed.subscribe(self.update)
+        first_note = list(self.model.notes.keys())[0] if len(self.model.notes) > 0 else None
+        self.model.select(first_note)
 
     def __create_widgets(self, icons):
         self.notebook = ttk.Notebook(self)
