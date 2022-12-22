@@ -63,10 +63,11 @@ class Persistence:
         self.__notespath = os.path.join(self.__basepath, "notes")
         self.__mkdir(self.__notespath)
         self.__css = self.__load_css()
-        if which("spectacle") is not None:
-            self.screen_tool = "spectacle -rbn -o"
-        else:
-            self.screen_tool = "gnome-screenshot -a -f"
+        self.__screenshot_command = self.__find_screenshot_command()
+
+    def __find_screenshot_command(self):
+        return "spectacle -rbn -o \"{filename}\"" if which("spectacle") is not None \
+            else "gnome-screenshot -a -f \"{filename}\""
 
     def __load_css(self):
         css_filename = os.path.join(self.__basepath, "style.css")
@@ -131,7 +132,7 @@ class Persistence:
         """Takes a screenshot and returns it's filename."""
         filename = "screenshot_" + str(uuid.uuid4()) + ".png"
         full_filename = os.path.join(self.note_path(name), filename)
-        status = os.system(f'{self.screen_tool} "{full_filename}"')
+        status = os.system(self.__screenshot_command.format(filename=full_filename))
         exit_code = os.waitstatus_to_exitcode(status)
         return filename if 0 == exit_code else None
 
