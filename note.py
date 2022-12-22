@@ -50,6 +50,24 @@ p code {
 """
 
 #-------------------------------------------
+# Shims
+#-------------------------------------------
+
+def shim_waitstatus_to_exitcode(status):
+    """Transforms waitstatus to exitcode without Python 3.9 features
+        (see https://bugs.python.org/issue40094 for details)
+    """
+    if os.WIFSIGNALED(status):
+        return -os.WTERMSIG(status)
+    if os.WIFEXITED(status):
+        return os.WEXITSTATUS(status)
+    if os.WIFSTOPPED(status):
+        return -os.WSTOPSIG(status)
+    return -1
+
+waitstatus_to_exitcode = getattr(os, 'waitstatus_to_exitcode', shim_waitstatus_to_exitcode)
+
+#-------------------------------------------
 # Persistence
 #-------------------------------------------
 
@@ -127,7 +145,7 @@ class Persistence:
         filename = "screenshot_" + str(uuid.uuid4()) + ".png"
         full_filename = os.path.join(self.note_path(name), filename)
         status = os.system(f'gnome-screenshot -a -f "{full_filename}"')
-        exit_code = os.waitstatus_to_exitcode(status)
+        exit_code = waitstatus_to_exitcode(status)
         return filename if 0 == exit_code else None
 
     def css(self):
