@@ -15,7 +15,6 @@ import webbrowser
 import base64
 import uuid
 import shutil
-import yaml
 from pathlib import Path
 from tkinter import scrolledtext
 from tkinter import ttk
@@ -23,6 +22,7 @@ from tktooltip import ToolTip
 from PIL import ImageFont, ImageDraw, Image, ImageTk
 from tkinterweb import HtmlFrame
 import markdown
+import yaml
 
 #-------------------------------------------
 # Constants
