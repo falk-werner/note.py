@@ -22,10 +22,21 @@ from tktooltip import ToolTip
 from PIL import ImageFont, ImageDraw, Image, ImageTk
 from tkinterweb import HtmlFrame
 import markdown
+import yaml
 
 #-------------------------------------------
 # Constants
 #-------------------------------------------
+
+DEFAULT_BASE_PATH="{home}/.notepy"
+DEFAULT_GEOMETRY="800x600"
+DEFAULT_FONT_SIZE=20
+
+DEFAULT_CONFIG=f"""\
+base_path: "{DEFAULT_BASE_PATH}"
+geometry: {DEFAULT_GEOMETRY}
+font_size: {DEFAULT_FONT_SIZE}
+"""
 
 DEFAULT_CSS="""
 table, th, td {
@@ -49,6 +60,8 @@ p code {
 }
 """
 
+CONFIG_FILE = ".notepy.yml"
+
 #-------------------------------------------
 # Persistence
 #-------------------------------------------
@@ -57,11 +70,23 @@ class Persistence:
     """Persistence handling"""
 
     def __init__(self):
+        self.__load_config_file()
         self.__basepath = os.path.join(Path.home(), ".notepy")
         self.__mkdir(self.__basepath)
         self.__notespath = os.path.join(self.__basepath, "notes")
         self.__mkdir(self.__notespath)
         self.__css = self.__load_css()
+
+    def __load_config_file(self):
+        filename = os.path.join(Path.home(), CONFIG_FILE)
+        if not os.path.isfile(filename):
+            with open(filename, 'wb') as config_file:
+                config_file.write(DEFAULT_CONFIG.encode('utf-8'))
+        with open(filename, 'rb') as config_file:
+            config = yaml.load(config_file, yaml.SafeLoader)
+        self.__basepath = config.get('base_path', DEFAULT_BASE_PATH).format(home=Path.home())
+        self.__geometry = config.get('geometry', DEFAULT_GEOMETRY)
+        self.__font_size = config.get('font_size', DEFAULT_FONT_SIZE)
 
     def __load_css(self):
         css_filename = os.path.join(self.__basepath, "style.css")
@@ -80,6 +105,14 @@ class Persistence:
 
     def __note_filename(self, name):
         return os.path.join(self.__notespath, name, "note.md")
+
+    def geometry(self):
+        """Returns the geometry (size) of the application window"""
+        return self.__geometry
+
+    def font_size(self):
+        """Returns the font size of the application"""
+        return self.__font_size
 
     def note_path(self, name):
         """Return the directory of a given note"""
@@ -271,7 +304,8 @@ class AppModel:
     """Business logic of the application itself."""
     def __init__(self, persistence=Persistence()):
         self.__name = "note.py"
-        self.__geometry = "800x600"
+        self.__geometry = persistence.geometry()
+        self.__font_size = persistence.font_size()
         self.notes = NoteCollection(persistence)
 
     def get_name(self):
@@ -282,6 +316,10 @@ class AppModel:
         """Returns the size of the main window."""
         return self.__geometry
 
+    def get_font_size(self):
+        """Returns the font size of the application."""
+        return self.__font_size
+
 
 
 #-------------------------------------------
@@ -291,12 +329,12 @@ class AppModel:
 # pylint: disable-next=too-few-public-methods
 class Icons:
     """Namespace for icons"""
-    def __init__(self, master):
+    def __init__(self, master, font_size):
         _ = master
         font_data = base64.b64decode(ICONFONT)
         self.font = ImageFont.truetype(font=io.BytesIO(font_data), size=64)
         self.app = self.__draw_text("\uefb6", color="white")
-        self.font = ImageFont.truetype(font=io.BytesIO(font_data), size=20)
+        self.font = ImageFont.truetype(font=io.BytesIO(font_data), size=font_size)
         self.new = self.__draw_text("\uefc2")
         self.search = self.__draw_text("\uef7f")
         self.screenshot = self.__draw_text("\ueecf")
@@ -494,7 +532,7 @@ class App:
     """Main class that runs the app."""
     def __init__(self, model=AppModel()):
         self.root = tk.Tk(className=model.get_name())
-        self.icons = Icons(self.root)
+        self.icons = Icons(self.root, model.get_font_size())
         self.root.title(model.get_name())
         self.root.tk.call('wm','iconphoto', self.root._w, self.icons.app)
         self.root.geometry(model.get_geometry())
