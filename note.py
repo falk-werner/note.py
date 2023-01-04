@@ -551,6 +551,12 @@ class NoteFrame(ttk.Frame):
         if tab == 0:
             self.save()
 
+    def change_tab(self, _):
+        """Changes from view to edit tab or vice versa. Bound to Control-e."""
+        tab = self.notebook.index(self.notebook.select())
+        new_tab = 0 if tab == 1 else 1
+        self.notebook.select(new_tab)
+
 
 class App:
     """Main class that runs the app."""
@@ -576,6 +582,7 @@ class App:
         self.root.bind("<Control-n>", lambda e: model.notes.add_new())
         self.root.bind("<Control-s>", lambda e: self.noteframe.save())
         self.root.bind("<Control-p>", lambda e: self.noteframe.screenshot())
+        self.root.bind("<Control-e>", self.noteframe.change_tab)
 
     def onclose(self):
         """Saves the current note and closes the app."""
