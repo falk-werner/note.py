@@ -236,8 +236,14 @@ class Note:
         return self.__contents
 
     def matches(self, note_filter):
-        """"Returns True, when the note matches the filter."""
-        return self.isvalid and note_filter.lower() in self.__name.lower()
+        """"Returns True, when the notes name or content matches the filter."""
+        result = False
+        if self.isvalid:
+            if note_filter.lower() in self.__name.lower():
+                result = True
+            elif note_filter.lower() in self.__contents.lower():
+                result = True
+        return result
 
     def delete(self):
         """Deletes the note and all related files."""
