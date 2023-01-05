@@ -594,6 +594,7 @@ class App:
 
         self.root.tk.call('source', './themes/Forest-ttk-theme-master/forest-light.tcl')
         ttk.Style().theme_use("forest-light")
+        ttk.Style().configure("TButton", padding=2)
 
         self.split_pane = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
         self.split_pane.pack(fill=tk.BOTH, expand=True)
