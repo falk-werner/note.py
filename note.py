@@ -583,6 +583,7 @@ class App:
         self.root.bind("<Control-s>", lambda e: self.noteframe.save())
         self.root.bind("<Control-p>", lambda e: self.noteframe.screenshot())
         self.root.bind("<Control-e>", self.noteframe.change_tab)
+        self.root.bind("<Control-f>", lambda e: self.listbox.entry.focus_set())
 
     def onclose(self):
         """Saves the current note and closes the app."""
