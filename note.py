@@ -203,7 +203,7 @@ class Persistence:
         filename = "screenshot_" + str(uuid.uuid4()) + ".png"
         full_filename = os.path.join(self.note_path(name), filename)
         status = os.system(self.__screenshot_command.format(filename=full_filename))
-        exit_code = os.waitstatus_to_exitcode(status)
+        exit_code = waitstatus_to_exitcode(status)
         return filename if 0 == exit_code else None
 
     def css(self):
