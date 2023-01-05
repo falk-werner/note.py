@@ -90,6 +90,7 @@ waitstatus_to_exitcode = getattr(os, 'waitstatus_to_exitcode', shim_waitstatus_t
 # Persistence
 #-------------------------------------------
 
+# pylint: disable-next=too-many-instance-attributes
 class Persistence:
     """Persistence handling"""
 
@@ -380,7 +381,7 @@ class AppModel:
     def get_font_size(self):
         """Returns the font size of the application."""
         return self.__font_size
-    
+
     def get_theme(self):
         """Returns the theme of the application."""
         return self.__theme
