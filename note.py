@@ -567,8 +567,15 @@ class App:
         self.root.tk.call('wm','iconphoto', self.root._w, self.icons.app)
         self.root.geometry(model.get_geometry())
 
-        ttk.Style().theme_use("clam")
-        ttk.Style().configure("TButton", padding=2)
+        #ttk.Style().theme_use("clam")
+        #ttk.Style().configure("TButton", padding=2)
+
+        #self.root.tk.call('lappend', 'auto_path', './themes/awthemes-10.4.0')
+        #self.root.tk.call('package', 'require', 'awlight')
+        #ttk.Style().theme_use("awlight")
+
+        self.root.tk.call('source', './themes/Forest-ttk-theme-master/forest-light.tcl')
+        ttk.Style().theme_use("forest-light")
 
         self.split_pane = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
         self.split_pane.pack(fill=tk.BOTH, expand=True)
