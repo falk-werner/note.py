@@ -581,6 +581,8 @@ class NoteFrame(ttk.Frame):
         tab = self.notebook.index(self.notebook.select())
         new_tab = 0 if tab == 1 else 1
         self.notebook.select(new_tab)
+        if new_tab == 1:
+            self.text.focus_set()
 
 
 class App:
