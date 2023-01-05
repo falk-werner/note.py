@@ -33,10 +33,11 @@ DEFAULT_BASE_PATH="{home}/.notepy"
 DEFAULT_GEOMETRY="800x600"
 DEFAULT_FONT_SIZE=20
 
-DEFAULT_CONFIG=f"""\
-base_path: "{DEFAULT_BASE_PATH}"
-geometry: {DEFAULT_GEOMETRY}
-font_size: {DEFAULT_FONT_SIZE}
+CONFIG_TEMPLATE="""\
+base_path: "{base_path}"
+geometry: {geometry}
+font_size: {font_size}
+screenshot_command: {screenshot_command}
 """
 
 DEFAULT_CSS="""
@@ -89,28 +90,46 @@ class Persistence:
     """Persistence handling"""
 
     def __init__(self):
+        self.__set_defaults()
         self.__load_config_file()
-        self.__basepath = os.path.join(Path.home(), ".notepy")
+        self.__basepath = self.__basepath_template.format(home=Path.home())
         self.__mkdir(self.__basepath)
         self.__notespath = os.path.join(self.__basepath, "notes")
         self.__mkdir(self.__notespath)
         self.__css = self.__load_css()
-        self.__screenshot_command = self.__find_screenshot_command()
 
     def __find_screenshot_command(self):
         return "spectacle -rbn -o \"{filename}\"" if which("spectacle") is not None \
             else "gnome-screenshot -a -f \"{filename}\""
 
+    def __set_defaults(self):
+        self.__basepath_template = DEFAULT_BASE_PATH
+        self.__geometry = DEFAULT_GEOMETRY
+        self.__font_size = DEFAULT_FONT_SIZE
+        self.__screenshot_command = self.__find_screenshot_command()
+
+    def __save_config_file(self):
+        config = CONFIG_TEMPLATE.format(
+            base_path=self.__basepath_template,
+            geometry=self.__geometry,
+            font_size=self.__font_size,
+            screenshot_command=self.__screenshot_command
+        )
+        filename = os.path.join(Path.home(), CONFIG_FILE)
+        with open(filename, "wb") as config_file:
+            config_file.write(config.encode('utf-8'))
+
     def __load_config_file(self):
         filename = os.path.join(Path.home(), CONFIG_FILE)
         if not os.path.isfile(filename):
-            with open(filename, 'wb') as config_file:
-                config_file.write(DEFAULT_CONFIG.encode('utf-8'))
+            self.__save_config_file()
         with open(filename, 'rb') as config_file:
             config = yaml.load(config_file, yaml.SafeLoader)
-        self.__basepath = config.get('base_path', DEFAULT_BASE_PATH).format(home=Path.home())
+        self.__basepath_template = config.get('base_path', DEFAULT_BASE_PATH)
         self.__geometry = config.get('geometry', DEFAULT_GEOMETRY)
         self.__font_size = config.get('font_size', DEFAULT_FONT_SIZE)
+        self.__screenshot_command = config.get('screenshot_command', \
+            self.__find_screenshot_command())
 
     def __load_css(self):
         css_filename = os.path.join(self.__basepath, "style.css")
