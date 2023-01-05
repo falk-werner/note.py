@@ -44,6 +44,8 @@ There are some key bindings to speed up some tasks:
 | Ctrl + s    | Sync changes _(note that changes are also saved automatically)_|
 | Ctrl + p    | Create screenshot |
 | Ctrl + q    | Qiut |
+| Ctrl + e    | Toggle between View and Edit |
+| Ctrl + f    | Set focus on filter element |
 
 ## Customize View
 

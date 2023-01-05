@@ -2,7 +2,7 @@
 
 """note.py: Yet another note taking app"""
 
-# Copyright (c) 2022 Falk Werner
+# Copyright (c) 2022 note.py authors
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,10 +23,21 @@ from tktooltip import ToolTip
 from PIL import ImageFont, ImageDraw, Image, ImageTk
 from tkinterweb import HtmlFrame
 import markdown
+import yaml
 
 #-------------------------------------------
 # Constants
 #-------------------------------------------
+
+DEFAULT_BASE_PATH="{home}/.notepy"
+DEFAULT_GEOMETRY="800x600"
+DEFAULT_FONT_SIZE=20
+
+DEFAULT_CONFIG=f"""\
+base_path: "{DEFAULT_BASE_PATH}"
+geometry: {DEFAULT_GEOMETRY}
+font_size: {DEFAULT_FONT_SIZE}
+"""
 
 DEFAULT_CSS="""
 table, th, td {
@@ -50,6 +61,26 @@ p code {
 }
 """
 
+CONFIG_FILE = ".notepy.yml"
+
+#-------------------------------------------
+# Shims
+#-------------------------------------------
+
+def shim_waitstatus_to_exitcode(status):
+    """Transforms waitstatus to exitcode without Python 3.9 features
+        (see https://bugs.python.org/issue40094 for details)
+    """
+    if os.WIFSIGNALED(status):
+        return -os.WTERMSIG(status)
+    if os.WIFEXITED(status):
+        return os.WEXITSTATUS(status)
+    if os.WIFSTOPPED(status):
+        return -os.WSTOPSIG(status)
+    return -1
+
+waitstatus_to_exitcode = getattr(os, 'waitstatus_to_exitcode', shim_waitstatus_to_exitcode)
+
 #-------------------------------------------
 # Persistence
 #-------------------------------------------
@@ -58,6 +89,7 @@ class Persistence:
     """Persistence handling"""
 
     def __init__(self):
+        self.__load_config_file()
         self.__basepath = os.path.join(Path.home(), ".notepy")
         self.__mkdir(self.__basepath)
         self.__notespath = os.path.join(self.__basepath, "notes")
@@ -68,6 +100,17 @@ class Persistence:
     def __find_screenshot_command(self):
         return "spectacle -rbn -o \"{filename}\"" if which("spectacle") is not None \
             else "gnome-screenshot -a -f \"{filename}\""
+
+    def __load_config_file(self):
+        filename = os.path.join(Path.home(), CONFIG_FILE)
+        if not os.path.isfile(filename):
+            with open(filename, 'wb') as config_file:
+                config_file.write(DEFAULT_CONFIG.encode('utf-8'))
+        with open(filename, 'rb') as config_file:
+            config = yaml.load(config_file, yaml.SafeLoader)
+        self.__basepath = config.get('base_path', DEFAULT_BASE_PATH).format(home=Path.home())
+        self.__geometry = config.get('geometry', DEFAULT_GEOMETRY)
+        self.__font_size = config.get('font_size', DEFAULT_FONT_SIZE)
 
     def __load_css(self):
         css_filename = os.path.join(self.__basepath, "style.css")
@@ -86,6 +129,14 @@ class Persistence:
 
     def __note_filename(self, name):
         return os.path.join(self.__notespath, name, "note.md")
+
+    def geometry(self):
+        """Returns the geometry (size) of the application window"""
+        return self.__geometry
+
+    def font_size(self):
+        """Returns the font size of the application"""
+        return self.__font_size
 
     def note_path(self, name):
         """Return the directory of a given note"""
@@ -191,8 +242,14 @@ class Note:
         return self.__contents
 
     def matches(self, note_filter):
-        """"Returns True, when the note matches the filter."""
-        return self.isvalid and note_filter.lower() in self.__name.lower()
+        """"Returns True, when the notes name or content matches the filter."""
+        result = False
+        if self.isvalid:
+            if note_filter.lower() in self.__name.lower():
+                result = True
+            elif note_filter.lower() in self.__contents.lower():
+                result = True
+        return result
 
     def delete(self):
         """Deletes the note and all related files."""
@@ -277,7 +334,8 @@ class AppModel:
     """Business logic of the application itself."""
     def __init__(self, persistence=Persistence()):
         self.__name = "note.py"
-        self.__geometry = "800x600"
+        self.__geometry = persistence.geometry()
+        self.__font_size = persistence.font_size()
         self.notes = NoteCollection(persistence)
 
     def get_name(self):
@@ -288,6 +346,10 @@ class AppModel:
         """Returns the size of the main window."""
         return self.__geometry
 
+    def get_font_size(self):
+        """Returns the font size of the application."""
+        return self.__font_size
+
 
 
 #-------------------------------------------
@@ -297,12 +359,12 @@ class AppModel:
 # pylint: disable-next=too-few-public-methods
 class Icons:
     """Namespace for icons"""
-    def __init__(self, master):
+    def __init__(self, master, font_size):
         _ = master
         font_data = base64.b64decode(ICONFONT)
         self.font = ImageFont.truetype(font=io.BytesIO(font_data), size=64)
         self.app = self.__draw_text("\uefb6", color="white")
-        self.font = ImageFont.truetype(font=io.BytesIO(font_data), size=20)
+        self.font = ImageFont.truetype(font=io.BytesIO(font_data), size=font_size)
         self.new = self.__draw_text("\uefc2")
         self.search = self.__draw_text("\uef7f")
         self.screenshot = self.__draw_text("\ueecf")
@@ -384,6 +446,8 @@ class NoteFrame(ttk.Frame):
         self.pack()
         self.__create_widgets(icons)
         model.on_selection_changed.subscribe(self.update)
+        first_note = list(self.model.notes.keys())[0] if len(self.model.notes) > 0 else None
+        self.model.select(first_note)
 
     def __create_widgets(self, icons):
         self.notebook = ttk.Notebook(self)
@@ -493,12 +557,18 @@ class NoteFrame(ttk.Frame):
         if tab == 0:
             self.save()
 
+    def change_tab(self, _):
+        """Changes from view to edit tab or vice versa. Bound to Control-e."""
+        tab = self.notebook.index(self.notebook.select())
+        new_tab = 0 if tab == 1 else 1
+        self.notebook.select(new_tab)
+
 
 class App:
     """Main class that runs the app."""
     def __init__(self, model=AppModel()):
         self.root = tk.Tk(className=model.get_name())
-        self.icons = Icons(self.root)
+        self.icons = Icons(self.root, model.get_font_size())
         self.root.title(model.get_name())
         self.root.tk.call('wm','iconphoto', self.root._w, self.icons.app)
         self.root.geometry(model.get_geometry())
@@ -518,6 +588,8 @@ class App:
         self.root.bind("<Control-n>", lambda e: model.notes.add_new())
         self.root.bind("<Control-s>", lambda e: self.noteframe.save())
         self.root.bind("<Control-p>", lambda e: self.noteframe.screenshot())
+        self.root.bind("<Control-e>", self.noteframe.change_tab)
+        self.root.bind("<Control-f>", lambda e: self.listbox.entry.focus_set())
 
     def onclose(self):
         """Saves the current note and closes the app."""
