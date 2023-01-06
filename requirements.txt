@@ -3,4 +3,5 @@ Pillow==9.3.0
 tk==0.1.0
 tkinter-tooltip==2.1.0
 tkinterweb==3.15.6
+ttkthemes==3.2.2
 pyyaml==5.3.1
