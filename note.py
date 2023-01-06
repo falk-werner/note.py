@@ -166,7 +166,7 @@ class Persistence:
         return self.__font_size
 
     def theme(self):
-        """Return the the of the application"""
+        """Return the theme of the application"""
         return self.__theme
 
     def note_path(self, name):
