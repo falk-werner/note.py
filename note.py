@@ -497,7 +497,7 @@ class NoteFrame(ttk.Frame):
         commandframe = ttk.Frame(editframe)
         deletebutton = ttk.Button(commandframe, image=icons.delete, command = self.delete)
         deletebutton.pack(side=tk.RIGHT)
-        ToolTip(deletebutton, msg="remove this note", delay=1.0)
+        ToolTip(deletebutton, msg="delete this note\nctrl + d", delay=1.0)
         updatebutton = ttk.Button(commandframe, image=icons.save, command = self.save)
         updatebutton.pack(side=tk.RIGHT)
         ToolTip(updatebutton, msg="sync changes\nctrl + s", delay=1.0)
@@ -626,6 +626,7 @@ class App:
         self.root.bind("<Control-p>", lambda e: self.noteframe.screenshot())
         self.root.bind("<Control-e>", self.noteframe.change_tab)
         self.root.bind("<Control-f>", lambda e: self.listbox.entry.focus_set())
+        self.root.bind("<Control-d>", lambda e: self.noteframe.delete())
 
     def onclose(self):
         """Saves the current note and closes the app."""
