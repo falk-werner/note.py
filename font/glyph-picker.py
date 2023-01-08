@@ -3,7 +3,6 @@
 import tkinter as tk
 from tkinter import ttk
 import tkinter.filedialog
-from tkscrolledframe import ScrolledFrame
 from PIL import ImageFont, ImageDraw, Image, ImageTk
 import fontforge
 
@@ -19,59 +18,19 @@ class GlyphImageProvider:
         draw.text(xy=(0,0), text=text, fill=color, font=self.font, anchor="lt")
         return ImageTk.PhotoImage(image=image)
 
-
-class GlyphBox(tk.Frame):
-    def __init__(self, master, image_provider, name, slot):
-        tk.Frame.__init__(self, master)
-        self.background = "white"
-        self.selectedbackground = "pale green"
-
-        self.bind("<Button-1>", lambda e: self.state_changed())
-        self.image = image_provider.get_image(chr(slot))
-        self.icon = tk.Label(self, image=self.image)
-        self.icon.grid(column=1, row=0)
-        self.icon.bind("<Button-1>", lambda e: self.state_changed())
-        self.label = tk.Label(self, text=name)
-        self.label.grid(column=2,row=0,sticky=tk.W)
-        self.label.bind("<Button-1>", lambda e: self.state_changed())
-        self.selected = False
-        self.__update_view()
-    
-    def __update_view(self):
-        if self.selected:
-            self.config(bg=self.selectedbackground)
-            self.icon.config(bg=self.selectedbackground)
-            self.label.config(bg=self.selectedbackground)
-        else:
-            self.config(bg=self.background)
-            self.icon.config(bg=self.background)
-            self.label.config(bg=self.background)
-
-    def state_changed(self):
-        self.selected = not self.selected
-        self.__update_view()
-
-class GridPos:
-    def __init__(self, limit=5):
-        self.limit = limit
-        self.col = 0
-        self.row = 0
-    
-    def next(self):
-        self.col += 1
-        if self.col >= self.limit:
-            self.row += 1
-            self.col = 0
-
 class App:
     def __init__(self):
         self.root = tk.Tk(className='GlyphPicker')
         self.root.title("GlyphPicker")
-        sf = ScrolledFrame(self.root, scrollbars="vertical")
-        sf.pack(side="top", expand=1, fill="both")
-        self.frame = sf.display_widget(tk.Frame)
+        self.root.geometry("1024x768")
         self.__create_menu()
-
+        self.root.columnconfigure(0, weight=1)
+        self.root.columnconfigure(2, weight=1)
+        self.root.rowconfigure(1, weight=1)
+        self.__create_available_widgets()
+        self.__create_selected_widgets()
+        self.__create_command_widgets()
+        self.__glyph_cache = {}
         
     def __create_menu(self):
         menu = tk.Menu(self.root)
@@ -83,6 +42,66 @@ class App:
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.root.quit)
 
+    def __create_available_widgets(self):
+        available_label = tk.Label(self.root, text="Available Glyphs")
+        available_label.grid(column=0, row=0)
+        frame = tk.Frame(self.root)
+        frame.grid(column=0, row=1, sticky=tk.NSEW)
+        frame.columnconfigure(0, weight=1)
+        frame.rowconfigure(0, weight=1)
+        self.treeview = ttk.Treeview(frame, columns=('name', 'codepoint'))
+        self.treeview.column('#0', width=100)
+        self.treeview.column('#1', width=100)
+        self.treeview.column('#2', width=100)
+        self.treeview.heading('name', text='Name')
+        self.treeview.heading('codepoint', text='Code Point')
+        self.treeview.grid(column=0,row=0,sticky=tk.NSEW)
+        scroller = tk.Scrollbar(frame, orient='vertical', command=self.treeview.yview)
+        scroller.grid(column=1,row=0,sticky=tk.NS)
+        self.treeview.configure(yscrollcommand=scroller.set)
+
+    def __create_selected_widgets(self):
+        selected_label = tk.Label(self.root, text="Selected Glyphs")
+        selected_label.grid(column=2, row=0)
+        frame = tk.Frame(self.root)
+        frame.grid(column=2, row=1, sticky=tk.NSEW)
+        frame.columnconfigure(0, weight=1)
+        frame.rowconfigure(0, weight=1)
+        self.sel_treeview = ttk.Treeview(frame, columns=('name', 'codepoint'))
+        self.sel_treeview.column('#0', width=100)
+        self.sel_treeview.column('#1', width=100)
+        self.sel_treeview.column('#2', width=100)
+        self.sel_treeview.heading('name', text='Name')
+        self.sel_treeview.heading('codepoint', text='Code Point')
+        self.sel_treeview.grid(column=0,row=0,sticky=tk.NSEW)
+        scroller = tk.Scrollbar(frame, orient='vertical', command=self.sel_treeview.yview)
+        scroller.grid(column=1,row=0,sticky=tk.NS)
+        self.sel_treeview.configure(yscrollcommand=scroller.set)
+
+    def __create_command_widgets(self):
+        frame = tk.Frame(self.root)
+        frame.grid(column=1,row=1,sticky=tk.NSEW)
+        add_button = tk.Button(frame, text='Add >>', command=self.on_add)
+        add_button.grid(column=0, row=0, sticky=tk.EW)
+        remove_button = tk.Button(frame, text="<< Remove", command=self.on_remove)
+        remove_button.grid(column=0, row=1, sticky=tk.EW)
+
+    def __load_font(self, filename):
+        self.__glyph_cache = {}
+        for row in self.treeview.get_children():
+            self.treeview.delete(row)
+        for row in self.sel_treeview.get_children():
+            self.sel_treeview.delete(row)
+
+        font = fontforge.open(filename)
+        image_provider = GlyphImageProvider(filename)
+        for glyph in font:
+                slot = font.findEncodingSlot(glyph) 
+                if slot < 0xffff:
+                    image = image_provider.get_image(chr(slot)) 
+                    self.__glyph_cache[slot] = image
+                    self.treeview.insert('', tk.END, image=image, values=(str(glyph), slot))
+
     def run(self):
         self.root.mainloop()
 
@@ -91,16 +110,13 @@ class App:
             title="Open Font",
             filetypes=(("Fonts", "*.ttf"), ("All", "*")))
         if font_filename:
-            print(font_filename)
-            font = fontforge.open(font_filename)
-            image_provider = GlyphImageProvider(font_filename)
-            pos = GridPos(1)
-            for glyph in font:
-                    slot = font.findEncodingSlot(glyph) 
-                    if slot < 0xffff:
-                        box = GlyphBox(self.frame, image_provider, str(glyph), slot)
-                        box.grid(column=pos.col, row=pos.row, sticky=tk.EW)
-                        pos.next()
+            self.__load_font(font_filename)
+    
+    def on_add(self):
+        pass
+
+    def on_remove(self):
+        pass
 
 
 if __name__ == "__main__":
