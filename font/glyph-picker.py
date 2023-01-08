@@ -130,7 +130,7 @@ class App:
     def open_font(self):
         font_filename = tk.filedialog.askopenfilename(
             title="Open Font",
-            filetypes=(("Fonts", "*.ttf"), ("All", "*")))
+            filetypes=(("Fonts", ".ttf"), ("All", "*")))
         if font_filename:
             self.__load_font(font_filename)
     
