@@ -102,6 +102,14 @@ class App:
                     self.__glyph_cache[slot] = image
                     self.treeview.insert('', tk.END, image=image, values=(str(glyph), slot))
 
+    def __is_selected(self, name):
+        for id in self.sel_treeview.get_children():
+            item = self.treeview.item(id)
+            item_name, _ = item.get('values')
+            if name == item_name:
+                return True
+        return False
+
     def run(self):
         self.root.mainloop()
 
@@ -113,10 +121,19 @@ class App:
             self.__load_font(font_filename)
     
     def on_add(self):
-        pass
+        selected_ids = self.treeview.selection()
+        for id in selected_ids:
+            item = self.treeview.item(id)
+            name, slot = item.get('values')
+            if not self.__is_selected(name):
+                image = self.__glyph_cache[slot]
+                self.sel_treeview.insert('', tk.END, image=image, values=(name, slot))
+
 
     def on_remove(self):
-        pass
+        selected_ids = self.sel_treeview.selection()
+        for id in selected_ids:
+            self.sel_treeview.delete(id)
 
 
 if __name__ == "__main__":
