@@ -67,16 +67,19 @@ class App:
         frame.grid(column=2, row=1, sticky=tk.NSEW)
         frame.columnconfigure(0, weight=1)
         frame.rowconfigure(0, weight=1)
-        self.sel_treeview = ttk.Treeview(frame, columns=('name', 'codepoint'))
+        self.sel_treeview = ttk.Treeview(frame, columns=('name', 'codepoint', "new_name"))
         self.sel_treeview.column('#0', width=100)
         self.sel_treeview.column('#1', width=100)
         self.sel_treeview.column('#2', width=100)
+        self.sel_treeview.column('#3', width=100)
         self.sel_treeview.heading('name', text='Name')
         self.sel_treeview.heading('codepoint', text='Code Point')
+        self.sel_treeview.heading('new_name', text='New Name')
         self.sel_treeview.grid(column=0,row=0,sticky=tk.NSEW)
         scroller = tk.Scrollbar(frame, orient='vertical', command=self.sel_treeview.yview)
         scroller.grid(column=1,row=0,sticky=tk.NS)
         self.sel_treeview.configure(yscrollcommand=scroller.set)
+        self.sel_treeview.bind('<Double-Button-1>', self.change_name)
 
     def __create_command_widgets(self):
         frame = tk.Frame(self.root)
@@ -127,14 +130,21 @@ class App:
             name, slot = item.get('values')
             if not self.__is_selected(name):
                 image = self.__glyph_cache[slot]
-                self.sel_treeview.insert('', tk.END, image=image, values=(name, slot))
-
+                self.sel_treeview.insert('', tk.END, image=image, values=(name, slot, ''))
 
     def on_remove(self):
         selected_ids = self.sel_treeview.selection()
         for id in selected_ids:
             self.sel_treeview.delete(id)
 
+    def change_name(self, event):
+        selected_id = self.sel_treeview.identify_row(event.y)
+        if selected_id:
+            item = self.sel_treeview.item(selected_id)
+            name, slot, _ = item.get('values')
+            value = tk.simpledialog.askstring(title='Change name', prompt=f"New name of \'{name}\':")
+            if value:
+                self.sel_treeview.item(selected_id, values=(name, slot, value))
 
 if __name__ == "__main__":
     app = App()
