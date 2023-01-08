@@ -20,15 +20,18 @@ from pathlib import Path
 from tkinter import scrolledtext
 from tkinter import ttk
 from tktooltip import ToolTip
+from ttkthemes import ThemedTk
 from PIL import ImageFont, ImageDraw, Image, ImageTk
 from tkinterweb import HtmlFrame
 import markdown
 import yaml
 
+
 #-------------------------------------------
 # Constants
 #-------------------------------------------
 
+DEFAULT_THEME="arc"
 DEFAULT_BASE_PATH="{home}/.notepy"
 DEFAULT_GEOMETRY="800x600"
 DEFAULT_FONT_SIZE=20
@@ -38,6 +41,7 @@ base_path: "{base_path}"
 geometry: {geometry}
 font_size: {font_size}
 screenshot_command: {screenshot_command}
+theme: {theme}
 """
 
 DEFAULT_CSS="""
@@ -86,6 +90,7 @@ waitstatus_to_exitcode = getattr(os, 'waitstatus_to_exitcode', shim_waitstatus_t
 # Persistence
 #-------------------------------------------
 
+# pylint: disable-next=too-many-instance-attributes
 class Persistence:
     """Persistence handling"""
 
@@ -107,13 +112,15 @@ class Persistence:
         self.__geometry = DEFAULT_GEOMETRY
         self.__font_size = DEFAULT_FONT_SIZE
         self.__screenshot_command = self.__find_screenshot_command()
+        self.__theme=DEFAULT_THEME
 
     def __save_config_file(self):
         config = CONFIG_TEMPLATE.format(
             base_path=self.__basepath_template,
             geometry=self.__geometry,
             font_size=self.__font_size,
-            screenshot_command=self.__screenshot_command
+            screenshot_command=self.__screenshot_command,
+            theme=self.__theme
         )
         filename = os.path.join(Path.home(), CONFIG_FILE)
         with open(filename, "wb") as config_file:
@@ -130,6 +137,7 @@ class Persistence:
         self.__font_size = config.get('font_size', DEFAULT_FONT_SIZE)
         self.__screenshot_command = config.get('screenshot_command', \
             self.__find_screenshot_command())
+        self.__theme = config.get('theme', DEFAULT_THEME)
 
     def __load_css(self):
         css_filename = os.path.join(self.__basepath, "style.css")
@@ -156,6 +164,10 @@ class Persistence:
     def font_size(self):
         """Returns the font size of the application"""
         return self.__font_size
+
+    def theme(self):
+        """Return the theme of the application"""
+        return self.__theme
 
     def note_path(self, name):
         """Return the directory of a given note"""
@@ -355,6 +367,7 @@ class AppModel:
         self.__name = "note.py"
         self.__geometry = persistence.geometry()
         self.__font_size = persistence.font_size()
+        self.__theme = persistence.theme()
         self.notes = NoteCollection(persistence)
 
     def get_name(self):
@@ -369,7 +382,9 @@ class AppModel:
         """Returns the font size of the application."""
         return self.__font_size
 
-
+    def get_theme(self):
+        """Returns the theme of the application."""
+        return self.__theme
 
 #-------------------------------------------
 # Widgets
@@ -588,7 +603,7 @@ class NoteFrame(ttk.Frame):
 class App:
     """Main class that runs the app."""
     def __init__(self, model=AppModel()):
-        self.root = tk.Tk(className=model.get_name())
+        self.root = ThemedTk(theme=model.get_theme(), className=model.get_name())
         self.icons = Icons(self.root, model.get_font_size())
         self.root.title(model.get_name())
         self.root.tk.call('wm','iconphoto', self.root._w, self.icons.app)
