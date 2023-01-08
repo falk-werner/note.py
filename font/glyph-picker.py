@@ -3,8 +3,11 @@
 import tkinter as tk
 from tkinter import ttk
 import tkinter.filedialog
+from tkinter import messagebox
 from PIL import ImageFont, ImageDraw, Image, ImageTk
 import fontforge
+import yaml
+import os
 
 class GlyphImageProvider:
     def __init__(self, font_filename, size=24):
@@ -23,6 +26,7 @@ class App:
         self.root = tk.Tk(className='GlyphPicker')
         self.root.title("GlyphPicker")
         self.root.geometry("1024x768")
+        self.font_filename = None
         self.__create_menu()
         self.root.columnconfigure(0, weight=1)
         self.root.columnconfigure(2, weight=1)
@@ -39,6 +43,12 @@ class App:
         file_menu = tk.Menu(menu)
         menu.add_cascade(label="File", menu=file_menu)
         file_menu.add_command(label="Open Font...", command=self.open_font)
+        file_menu.add_command(label="Open Config...", command=self.load_config)
+        file_menu.add_separator()
+        file_menu.add_command(label="Save Config...", command=self.save_config)
+        file_menu.add_separator()
+        file_menu.add_command(label="Export as TTF...", command=self.export_ttf)
+        file_menu.add_command(label="Export as Base64...", command=self.export_b64)
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.root.quit)
 
@@ -90,6 +100,7 @@ class App:
         remove_button.grid(column=0, row=1, sticky=tk.EW)
 
     def __load_font(self, filename):
+        self.font_filename = filename
         self.__glyph_cache = {}
         for row in self.treeview.get_children():
             self.treeview.delete(row)
@@ -107,8 +118,8 @@ class App:
 
     def __is_selected(self, name):
         for id in self.sel_treeview.get_children():
-            item = self.treeview.item(id)
-            item_name, _ = item.get('values')
+            item = self.sel_treeview.item(id)
+            item_name, _, _ = item.get('values')
             if name == item_name:
                 return True
         return False
@@ -145,6 +156,49 @@ class App:
             value = tk.simpledialog.askstring(title='Change name', prompt=f"New name of \'{name}\':")
             if value:
                 self.sel_treeview.item(selected_id, values=(name, slot, value))
+
+    def export_ttf(self):
+        pass
+
+    def export_b64(self):
+        pass
+
+    def save_config(self):
+        if None == self.font_filename:
+            tk.messagebox.showerror('Save failed', 'No font loaded.')
+            return
+        filename = tk.filedialog.asksaveasfilename(
+            title="Save Config",
+            filetypes=(("Yaml", ".yml .yaml"), ("All", "*")))
+        if filename:
+            glyphs = []
+            for id in self.sel_treeview.get_children():
+                item = self.sel_treeview.item(id)
+                name, slot, new_name = item.get('values')
+                glyph = {'name': name, 'slot': slot, 'new_name': new_name}
+                glyphs.append(glyph)
+            contents = {}
+            contents['font'] = os.path.relpath(self.font_filename)
+            contents['glyphs'] = glyphs
+            with open(filename, 'w') as config_file:
+                yaml.dump(contents, config_file)
+
+    def load_config(self):
+        filename = tk.filedialog.askopenfilename(
+            title="Load Config",
+            filetypes=(("Yaml", ".yml .yaml"), ("All", "*")))
+        if filename:
+            with open(filename, 'r') as config_file:
+                config = yaml.load(config_file, yaml.SafeLoader)
+            filename = config.get('font')
+            self.__load_font(filename)
+            glyphs = config.get('glyphs')
+            for glyph in glyphs:
+                name = glyph.get('name')
+                slot = glyph.get('slot')
+                new_name = glyph.get('new_name')
+                image = self.__glyph_cache[slot]
+                self.sel_treeview.insert('', tk.END, image=image, values=(name, slot, new_name))
 
 if __name__ == "__main__":
     app = App()
