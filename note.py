@@ -434,7 +434,7 @@ class FilterableListbox(ttk.Frame):
         self.filter.trace("w", lambda *args: self.update() )
         self.entry = ttk.Entry(self.commandframe, textvariable=self.filter)
         self.entry.pack(fill=tk.X, expand=True, padx=5)
-        ToolTip(self.entry, msg="filter notes\nctrl + f", delay=1.0)
+        ToolTip(self.entry, msg="filter notes (Ctrl+F)", delay=1.0)
         self.commandframe.pack(side = tk.TOP, fill=tk.X)
 
         self.listbox = tk.Listbox(self)
