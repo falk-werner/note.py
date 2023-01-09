@@ -344,6 +344,7 @@ class NoteCollection:
         name = self._generate_name()
         note = Note(self, self.__persistence, name)
         self.notes[name] = note
+        self.select(name)
         self.on_changed.fire()
 
     def note_changed(self):
