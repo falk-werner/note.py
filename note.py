@@ -427,14 +427,14 @@ class FilterableListbox(ttk.Frame):
         self.commandframe = ttk.Frame(self)
         self.new_button = ttk.Button(self.commandframe, image=icons.new, command=self.model.add_new)
         self.new_button.pack(side = tk.RIGHT, fill=tk.X)
-        ToolTip(self.new_button, msg="add new note", delay=1.0)
+        ToolTip(self.new_button, msg="add new note (Ctrl+N)", delay=1.0)
         self.label = ttk.Label(self.commandframe, image=icons.search)
         self.label.pack(side=tk.RIGHT, fill=tk.X)
         self.filter = tk.StringVar()
         self.filter.trace("w", lambda *args: self.update() )
         self.entry = ttk.Entry(self.commandframe, textvariable=self.filter)
         self.entry.pack(fill=tk.X, expand=True, padx=5)
-        ToolTip(self.entry, msg="filter notes", delay=1.0)
+        ToolTip(self.entry, msg="filter notes (Ctrl+F)", delay=1.0)
         self.commandframe.pack(side = tk.TOP, fill=tk.X)
 
         self.listbox = tk.Listbox(self)
@@ -497,14 +497,14 @@ class NoteFrame(ttk.Frame):
         commandframe = ttk.Frame(editframe)
         deletebutton = ttk.Button(commandframe, image=icons.delete, command = self.delete)
         deletebutton.pack(side=tk.RIGHT)
-        ToolTip(deletebutton, msg="remove this note", delay=1.0)
+        ToolTip(deletebutton, msg="delete this note (Ctrl+D)", delay=1.0)
         updatebutton = ttk.Button(commandframe, image=icons.save, command = self.save)
         updatebutton.pack(side=tk.RIGHT)
-        ToolTip(updatebutton, msg="sync changes", delay=1.0)
+        ToolTip(updatebutton, msg="sync changes (Ctrl+S)", delay=1.0)
         screenshotbutton = ttk.Button(commandframe, image=icons.screenshot, \
             command = self.screenshot)
         screenshotbutton.pack(side=tk.RIGHT, padx=5)
-        ToolTip(screenshotbutton, msg="take screenshot", delay=1.0)
+        ToolTip(screenshotbutton, msg="take screenshot (Ctrl+F)", delay=1.0)
         self.namevar = tk.StringVar()
         nameedit = tk.Entry(commandframe, textvariable=self.namevar)
         nameedit.pack(fill=tk.BOTH, expand=True)
@@ -626,6 +626,7 @@ class App:
         self.root.bind("<Control-p>", lambda e: self.noteframe.screenshot())
         self.root.bind("<Control-e>", self.noteframe.change_tab)
         self.root.bind("<Control-f>", lambda e: self.listbox.entry.focus_set())
+        self.root.bind("<Control-d>", lambda e: self.noteframe.delete())
 
     def onclose(self):
         """Saves the current note and closes the app."""

@@ -41,6 +41,7 @@ There are some key bindings to speed up some tasks:
 | Key Binding | Description |
 | ----------- | ----------- |
 | Ctrl + n    | Create a new note |
+| Ctrl + d    | Delete selected note |
 | Ctrl + s    | Sync changes _(note that changes are also saved automatically)_|
 | Ctrl + p    | Create screenshot |
 | Ctrl + q    | Qiut |
