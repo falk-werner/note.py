@@ -1,4 +1,4 @@
-Markdown==3.4.1
+pycmarkgfm==1.2.0
 Pillow==9.3.0
 tk==0.1.0
 tkinter-tooltip==2.1.0
