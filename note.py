@@ -240,7 +240,7 @@ class ModelEvent:
         self.subscribers.remove(subscriber)
 
     def fire(self):
-        """Inform all subscibers-"""
+        """Inform all subscibers."""
         for subscriber in self.subscribers:
             subscriber()
 
