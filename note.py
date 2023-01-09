@@ -427,7 +427,7 @@ class FilterableListbox(ttk.Frame):
         self.commandframe = ttk.Frame(self)
         self.new_button = ttk.Button(self.commandframe, image=icons.new, command=self.model.add_new)
         self.new_button.pack(side = tk.RIGHT, fill=tk.X)
-        ToolTip(self.new_button, msg="add new note\nctrl + n", delay=1.0)
+        ToolTip(self.new_button, msg="add new note (Ctrl+N)", delay=1.0)
         self.label = ttk.Label(self.commandframe, image=icons.search)
         self.label.pack(side=tk.RIGHT, fill=tk.X)
         self.filter = tk.StringVar()
