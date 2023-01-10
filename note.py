@@ -240,7 +240,7 @@ class ModelEvent:
         self.subscribers.remove(subscriber)
 
     def fire(self):
-        """Inform all subscibers-"""
+        """Inform all subscibers."""
         for subscriber in self.subscribers:
             subscriber()
 
@@ -344,6 +344,7 @@ class NoteCollection:
         name = self._generate_name()
         note = Note(self, self.__persistence, name)
         self.notes[name] = note
+        self.select(name)
         self.on_changed.fire()
 
     def note_changed(self):
