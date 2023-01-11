@@ -3,7 +3,7 @@
 ## v1.1.0 (upcoming)
 
 - include node contents in search
-- add new accelarators (Ctrl+F, Ctrl-E)
+- add new accelarators (Ctrl+F, Ctrl+E, Ctrl+D)
 - use theme (theme can be selected via config file)
 - make screenshot tool configurable (via config file)
 - add central config file
