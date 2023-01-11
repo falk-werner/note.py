@@ -21,7 +21,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: $$ {{ github.ref }}
-          release_name: ${{ githib.ref }}
+          release_name: ${{ github.ref }}
           body_path: ${{ github.workspace }}/changelog.md
           draft: true
           prerelease: false
