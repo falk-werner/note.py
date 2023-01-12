@@ -643,7 +643,7 @@ class App:
         """Saves the current note and closes the app."""
         try:
             self.noteframe.save()
-            self.__model.set_geometry(f"{self.root.winfo_width()}x{self.root.winfo_height()}")
+            self.__model.set_geometry(self.root.winfo_geometry())
         # pylint: disable-next=bare-except
         except:
             print("error: failed to save note")
