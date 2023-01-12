@@ -1,0 +1,20 @@
+font: font/icofont.ttf
+glyphs:
+- name: plus
+  new_name: plus-2
+  slot: 61378
+- name: papers
+  new_name: ''
+  slot: 61366
+- name: look
+  new_name: ''
+  slot: 61311
+- name: camera
+  new_name: ''
+  slot: 61135
+- name: spinner-alt-3
+  new_name: ''
+  slot: 61430
+- name: bin
+  new_name: ''
+  slot: 61115
