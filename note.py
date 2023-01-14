@@ -547,7 +547,6 @@ class NoteFrame(ttk.Frame):
         self.frame = HtmlFrame(self.notebook, messages_enabled=False)
         self.frame.on_link_click(self.link_clicked)
         self.frame.load_html("")
-        #self.frame.grid(column=0, row=0, sticky=tk.NSEW)
         self.notebook.add(self.frame, 'View')
 
         editframe = tk.Frame(self.notebook)
