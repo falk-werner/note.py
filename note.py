@@ -482,6 +482,61 @@ class FilterableListbox(ttk.Frame):
             self.model.select(result)
 
 # pylint: disable-next=too-many-ancestors
+class TabControl(ttk.Frame):
+    """Replacement for ttk.Notepad
+
+    ttk.Notepad crashed on Windows in combination with
+    tkinterweb and tk.Text (see https://github.com/Andereoo/TkinterWeb/issues/19).
+    """
+    def __init__(self, master):
+        """Creates a new instance of TabControl."""
+        ttk.Frame.__init__(self, master)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(1, weight=1)
+
+        self.tab_frame = ttk.Frame(self)
+        self.tab_frame.grid(column=0, row=0, sticky=tk.EW)
+        self.tab_buttons = []
+        self.tab_widgets = []
+        self.selected_index = -1
+        self.selected_widget = None
+
+
+    def add(self, widget, name):
+        "Adds a tab."
+        index = len(self.tab_widgets)
+        button = ttk.Button(self.tab_frame, text=name, command=lambda : self.select(index))
+        button.grid(column=index, row=0, stick=tk.E)
+        self.tab_buttons.append(button)
+        self.tab_widgets.append(widget)
+
+        if index == 0:
+            self.select(index)
+
+    def select(self, index=None):
+        "Selects a tab and returns the selected widget."
+        length = len(self.tab_widgets)
+        if index is not None and 0 <= index < length:
+            if self.selected_widget is not None:
+                self.selected_widget.grid_forget()
+            self.selected_index = index
+            self.selected_widget = self.tab_widgets[index]
+            self.selected_widget.grid(column=0, row=1, sticky=tk.NSEW)
+            for i in range(0, length):
+                state = "!pressed" if i != index else "pressed"
+                self.tab_buttons[i].state([state])
+            self.event_generate("<<TabControlTabChanged>>", when="tail")
+
+        return self.selected_widget
+
+    def index(self, widget):
+        """Returns the index of a widget."""
+        for i, cur_widget in enumerate(self.tab_widgets):
+            if widget == cur_widget:
+                return i
+        return -1
+
+# pylint: disable-next=too-many-ancestors
 class NoteFrame(ttk.Frame):
     """Widget to view and edit a single note."""
 
@@ -489,21 +544,21 @@ class NoteFrame(ttk.Frame):
         ttk.Frame.__init__(self, master)
         self.note = None
         self.model = model
-        self.pack()
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
         self.__create_widgets(icons)
         model.on_selection_changed.subscribe(self.update)
         first_note = list(self.model.notes.keys())[0] if len(self.model.notes) > 0 else None
         self.model.select(first_note)
 
     def __create_widgets(self, icons):
-        self.notebook = ttk.Notebook(self)
-        self.notebook.pack(fill=tk.BOTH, expand=True)
+        self.notebook = TabControl(self)
+        self.notebook.grid(column=0, row=0, sticky=tk.NSEW)
 
         self.frame = HtmlFrame(self.notebook, messages_enabled=False)
         self.frame.on_link_click(self.link_clicked)
         self.frame.load_html("")
-        self.frame.pack(fill=tk.BOTH, expand=1)
-        self.notebook.add(self.frame, text='View')
+        self.notebook.add(self.frame, 'View')
 
         editframe = tk.Frame(self.notebook)
         commandframe = ttk.Frame(editframe)
@@ -526,12 +581,12 @@ class NoteFrame(ttk.Frame):
 
         self.text = scrolledtext.ScrolledText(editframe)
         self.text.pack(fill=tk.BOTH, expand=True)
-        self.notebook.add(editframe, text='Edit')
+        self.notebook.add(editframe, 'Edit')
         self.activateable_widgets = [ updatebutton, deletebutton, \
             screenshotbutton, nameedit, self.text]
         self.enable(False)
 
-        self.notebook.bind("<<NotebookTabChanged>>", self.tab_changed)
+        self.notebook.bind("<<TabControlTabChanged>>", self.tab_changed)
 
     def enable(self, value=True):
         """Enables or disables all activatable sub-widgets."""
