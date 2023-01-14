@@ -157,8 +157,12 @@ class Persistence:
     def __note_filename(self, name):
         return os.path.join(self.__notespath, name, "note.md")
 
-    def geometry(self):
+    def geometry(self, geometry=None):
         """Returns the geometry (size) of the application window"""
+        if geometry:
+            # pylint: disable-next=attribute-defined-outside-init
+            self.__geometry = geometry
+            self.__save_config_file()
         return self.__geometry
 
     def font_size(self):
@@ -365,6 +369,7 @@ class NoteCollection:
 class AppModel:
     """Business logic of the application itself."""
     def __init__(self, persistence=Persistence()):
+        self.__persistence = persistence
         self.__name = "note.py"
         self.__geometry = persistence.geometry()
         self.__font_size = persistence.font_size()
@@ -378,6 +383,10 @@ class AppModel:
     def get_geometry(self):
         """Returns the size of the main window."""
         return self.__geometry
+
+    def set_geometry(self, geometry):
+        """Sets the size of the main window."""
+        self.__persistence.geometry(geometry)
 
     def get_font_size(self):
         """Returns the font size of the application."""
@@ -605,6 +614,7 @@ class NoteFrame(ttk.Frame):
 class App:
     """Main class that runs the app."""
     def __init__(self, model=AppModel()):
+        self.__model = model
         self.root = ThemedTk(theme=model.get_theme(), className=model.get_name())
         self.icons = Icons(self.root, model.get_font_size())
         self.root.title(model.get_name())
@@ -634,6 +644,7 @@ class App:
         """Saves the current note and closes the app."""
         try:
             self.noteframe.save()
+            self.__model.set_geometry(self.root.winfo_geometry())
         # pylint: disable-next=bare-except
         except:
             print("error: failed to save note")
