@@ -23,7 +23,7 @@ from tktooltip import ToolTip
 from ttkthemes import ThemedTk
 from PIL import ImageFont, ImageDraw, Image, ImageTk
 from tkinterweb import HtmlFrame
-import pycmarkgfm
+import cmarkgfm
 import yaml
 
 
@@ -541,7 +541,7 @@ class NoteFrame(ttk.Frame):
         """Updates the view of a note without saving it."""
         if self.note is not None:
             contents = self.text.get(1.0, tk.END)
-            html = pycmarkgfm.gfm_to_html(contents)
+            html = cmarkgfm.github_flavored_markdown_to_html(contents)
             self.frame.load_html(html, base_url=f"file://{self.note.base_path()}/")
             self.frame.add_css(self.note.css())
 
@@ -552,7 +552,7 @@ class NoteFrame(ttk.Frame):
         if self.note.isvalid:
             self.enable(True)
             contents = self.note.contents()
-            html = pycmarkgfm.gfm_to_html(contents)
+            html = cmarkgfm.github_flavored_markdown_to_html(contents)
             self.frame.load_html(html, base_url=f"file://{self.note.base_path()}/")
             self.frame.add_css(self.note.css())
             self.text.delete(1.0, tk.END)
