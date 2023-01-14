@@ -484,8 +484,8 @@ class FilterableListbox(ttk.Frame):
 # pylint: disable-next=too-many-ancestors
 class NoteFrame(ttk.Frame):
     """Widget to view and edit a single note."""
+
     def __init__(self, master, model, icons):
-        self.mk_options = (cmarkgfmOptions.CMARK_OPT_HARDBREAKS)
         ttk.Frame.__init__(self, master)
         self.note = None
         self.model = model
@@ -542,7 +542,8 @@ class NoteFrame(ttk.Frame):
         """Updates the view of a note without saving it."""
         if self.note is not None:
             contents = self.text.get(1.0, tk.END)
-            html = cmarkgfm.github_flavored_markdown_to_html(contents, self.mk_options)
+            html = cmarkgfm.github_flavored_markdown_to_html(contents,
+            (cmarkgfmOptions.CMARK_OPT_HARDBREAKS))
             self.frame.load_html(html, base_url=f"file://{self.note.base_path()}/")
             self.frame.add_css(self.note.css())
 
@@ -553,7 +554,8 @@ class NoteFrame(ttk.Frame):
         if self.note.isvalid:
             self.enable(True)
             contents = self.note.contents()
-            html = cmarkgfm.github_flavored_markdown_to_html(contents, self.mk_options)
+            html = cmarkgfm.github_flavored_markdown_to_html(contents,
+            (cmarkgfmOptions.CMARK_OPT_HARDBREAKS))
             self.frame.load_html(html, base_url=f"file://{self.note.base_path()}/")
             self.frame.add_css(self.note.css())
             self.text.delete(1.0, tk.END)
