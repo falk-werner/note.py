@@ -23,7 +23,8 @@ from tktooltip import ToolTip
 from ttkthemes import ThemedTk
 from PIL import ImageFont, ImageDraw, Image, ImageTk
 from tkinterweb import HtmlFrame
-import markdown
+import cmarkgfm
+from cmarkgfm.cmark import Options as cmarkgfmOptions
 import yaml
 
 
@@ -483,6 +484,7 @@ class FilterableListbox(ttk.Frame):
 # pylint: disable-next=too-many-ancestors
 class NoteFrame(ttk.Frame):
     """Widget to view and edit a single note."""
+
     def __init__(self, master, model, icons):
         ttk.Frame.__init__(self, master)
         self.note = None
@@ -540,7 +542,8 @@ class NoteFrame(ttk.Frame):
         """Updates the view of a note without saving it."""
         if self.note is not None:
             contents = self.text.get(1.0, tk.END)
-            html = markdown.markdown(contents, extensions=['tables'])
+            html = cmarkgfm.github_flavored_markdown_to_html(contents,
+            (cmarkgfmOptions.CMARK_OPT_HARDBREAKS))
             self.frame.load_html(html, base_url=f"file://{self.note.base_path()}/")
             self.frame.add_css(self.note.css())
 
@@ -551,7 +554,8 @@ class NoteFrame(ttk.Frame):
         if self.note.isvalid:
             self.enable(True)
             contents = self.note.contents()
-            html = markdown.markdown(contents, extensions=['tables'])
+            html = cmarkgfm.github_flavored_markdown_to_html(contents,
+            (cmarkgfmOptions.CMARK_OPT_HARDBREAKS))
             self.frame.load_html(html, base_url=f"file://{self.note.base_path()}/")
             self.frame.add_css(self.note.css())
             self.text.delete(1.0, tk.END)
