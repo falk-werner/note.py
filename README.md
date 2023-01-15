@@ -73,7 +73,7 @@ In order to run `note.py`, the following python modules should be installed:
 - pyyaml
 - cmarkgfm
 
-You can installe these modules using the [requiremnts.txt](requirements.txt) file provided in this repository.
+You can install these modules using the [requirements.txt](requirements.txt) file provided in this repository.
 
     pip install -r requirements.txt
 
