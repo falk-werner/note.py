@@ -40,10 +40,11 @@ jobs:
       - name: Create and package documentation
         run: |
           ./doc/create_doc.sh
-          tar -czf github-pages.tar.gz -C doc/html .
   
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
+        with:
+          path: "doc/html"
 
   deploy:
     environment:
