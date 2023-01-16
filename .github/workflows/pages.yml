@@ -34,14 +34,10 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v2
 
-      - name: Build with Jekyll
+      - name: Create and package documentation
         run: |
+          ./doc/create_doc.sh
           tar -czf github-pages.tar.gz -C doc/html .
-
-        uses: actions/jekyll-build-pages@v1
-        with:
-          source: ./
-          destination: ./_site
   
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
