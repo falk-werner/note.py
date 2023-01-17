@@ -8,6 +8,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+# pylint: disable=too-many-lines
+
 import tkinter as tk
 import os
 import io
@@ -76,6 +78,12 @@ CONFIG_FILE = ".notepy.yml"
 def shim_waitstatus_to_exitcode(status):
     """Transforms waitstatus to exitcode without Python 3.9 features
         (see https://bugs.python.org/issue40094 for details)
+
+        :param status: status code as returned by os.system
+        :type status: int
+
+        :return: exit code
+        :rtype: int
     """
     if os.WIFSIGNALED(status):
         return -os.WTERMSIG(status)
@@ -93,7 +101,10 @@ waitstatus_to_exitcode = getattr(os, 'waitstatus_to_exitcode', shim_waitstatus_t
 
 # pylint: disable-next=too-many-instance-attributes
 class Persistence:
-    """Persistence handling"""
+    """Persistence handling.
+
+    All file operations are handled by the Persistence class.
+    """
 
     def __init__(self):
         self.__set_defaults()
@@ -159,7 +170,16 @@ class Persistence:
         return os.path.join(self.__notespath, name, "note.md")
 
     def geometry(self, geometry=None):
-        """Returns the geometry (size) of the application window"""
+        """
+        Returns and optionally sets the geometry (size)
+        of the application window.
+
+        :param geometry: Optional geometry of application window (Default: None).
+        :type  geometry: str | None
+
+        :return: Configured geometry (size) of the application window.
+        :rtype: str
+        """
         if geometry:
             # pylint: disable-next=attribute-defined-outside-init
             self.__geometry = geometry
@@ -167,19 +187,38 @@ class Persistence:
         return self.__geometry
 
     def font_size(self):
-        """Returns the font size of the application"""
+        """Returns the font size of the application.
+
+        :return: Font size of the application.
+        :rtype: int
+        """
         return self.__font_size
 
     def theme(self):
-        """Return the theme of the application"""
+        """Return the theme of the application.
+
+        :return: Theme of the application.
+        :rtype: str
+        """
         return self.__theme
 
     def note_path(self, name):
-        """Return the directory of a given note"""
+        """Return the directory of a given note.
+
+        :param name: Name of the note.
+        :type  name: str
+
+        :return: Path of directory that conatins the nore.
+        :rtype: str
+        """
         return os.path.join(self.__notespath, name)
 
     def list_notes(self):
-        """Returns a list of all notes"""
+        """Returns a list of all notes.
+
+        :return: List of all notes.
+        :rtype: list[str]
+        """
         notes = []
         for name in os.listdir(self.__notespath):
             notefile = self.__note_filename(name)
@@ -188,7 +227,16 @@ class Persistence:
         return notes
 
     def read_note(self, name):
-        """Returns the contents of a note. Non-existing notes will be created"""
+        """Returns the contents of a note.
+
+        Non-existing notes will be created.
+
+        :param name: Name of the note.
+        :type  name: str
+
+        :return: Contents of the note.
+        :rtype: str
+        """
         filename = self.__note_filename(name)
         if not os.path.isfile(filename):
             self.write_note(name, "")
@@ -197,26 +245,49 @@ class Persistence:
         return data
 
     def write_note(self, name, text):
-        """Writes the contents of a note to note file."""
+        """Writes the contents of a note to note file.
+
+        :param name: Name of the note.
+        :type  name: str
+        :param text: Contents of the note.
+        :type  text: str
+        """
         self.__mkdir(self.note_path(name))
         filename = self.__note_filename(name)
         with open(filename, "wb") as note_file:
             note_file.write(text.encode("utf-8"))
 
     def rename_note(self, oldname, newname):
-        """Renames a note in the filesystem."""
+        """Renames a note in the filesystem.
+
+        :param oldname: Old name of the note.
+        :type  oldname: str
+        :param newname: New name of the note.
+        :type  newname: str
+        """
         old_path = self.note_path(oldname)
         new_path = self.note_path(newname)
         os.rename(old_path, new_path)
 
     def remove_note(self, name):
-        """Removes a note (including all related files)."""
+        """Removes a note (including all related files).
+
+        :param name: Name of the note.
+        :type  name: str
+        """
         note_path = self.note_path(name)
         if os.path.isdir(note_path):
             shutil.rmtree(note_path)
 
     def screenshot(self, name):
-        """Takes a screenshot and returns it's filename."""
+        """Takes a screenshot and returns it's filename.
+
+        :param name: Name of the not the screenshot is assigned to.
+        :type  name: str
+
+        :return: Filename of the screenshot.
+        :rtype: str
+        """
         filename = "screenshot_" + str(uuid.uuid4()) + ".png"
         full_filename = os.path.join(self.note_path(name), filename)
         status = os.system(self.__screenshot_command.format(filename=full_filename))
@@ -224,7 +295,11 @@ class Persistence:
         return filename if 0 == exit_code else None
 
     def css(self):
-        """Returns the CSS for the webview."""
+        """Returns the CSS of the webview.
+
+        :return: Returns the style sheet of the webview.
+        :rtype: str
+        """
         return self.__css
 
 #-------------------------------------------
@@ -237,11 +312,19 @@ class ModelEvent:
         self.subscribers = []
 
     def subscribe(self, subscriber):
-        """Subscribe to the event."""
+        """Subscribe to the event.
+
+        :param subscriber: Subscriber to add.
+        :type  subscriber: callable
+        """
         self.subscribers.append(subscriber)
 
     def unsubscribe(self, subscriber):
-        """Revoke subscription."""
+        """Revoke subscription.
+
+        :param subscriber: Subscriber to remove.
+        :type  subscriber: callable
+        """
         self.subscribers.remove(subscriber)
 
     def fire(self):
@@ -250,7 +333,21 @@ class ModelEvent:
             subscriber()
 
 class Note:
-    """Contains all business logic of a note."""
+    """Contains all business logic of a note.
+
+    :param parent: Note collection that owns the note.
+    :type  parent: NoteCollection
+
+    :param persistence: Persitence Provider of the note.
+    :type  persistence: Persistence
+
+    :param name: Name of the note.
+    :type  name: str
+
+    :param isvalid: Optional flag to mark the note valid (Default: True).
+    :type  isvalue: bool
+    """
+
     def __init__(self, parent, persistence, name, isvalid=True):
         self.__parent = parent
         self.__persistence = persistence
@@ -263,7 +360,14 @@ class Note:
         return self.__name
 
     def name(self, value=None):
-        """Reads or sets the name of a note."""
+        """Reads or sets the name of a note.
+
+        :param value: Optional new name of the note (Default: None).
+        :type  value: str | None
+
+        :return: Name of the note.
+        :rtype: str
+        """
         if self.isvalid and value is not None and value != self.__name:
             self.__persistence.rename_note(self.__name, value)
             self.__name = value
@@ -271,14 +375,28 @@ class Note:
         return self.__name
 
     def contents(self, value=None):
-        """Reads or writes the contents of a note."""
+        """Reads or writes the contents of a note.
+
+        :param value: Optional new contents of the note (Default: None).
+        :type  value: str | None
+
+        :return: Contents of the note.
+        :rtype: str
+        """
         if self.isvalid and value is not None:
             self.__persistence.write_note(self.__name, value)
             self.__contents = value
         return self.__contents
 
     def matches(self, note_filter):
-        """"Returns True, when the notes name or content matches the filter."""
+        """"Returns True, when the notes name or content matches the filter.
+
+        :param note_filter: Filter to check the note against.
+        :type  note_filter: str
+
+        :return: True, if the note matches the filter.
+        :rtype: bool
+        """
         result = False
         if self.isvalid:
             if note_filter.lower() in self.__name.lower():
@@ -294,21 +412,38 @@ class Note:
         self.__parent.note_changed()
 
     def screenshot(self):
-        """Takes a screenshot and return the filename."""
+        """Takes a screenshot and return the filename.
+
+        :return: Filename of the screenshot on success, None otherwise.
+        :rtype: str | None
+        """
         return self.__persistence.screenshot(self.__name) if self.isvalid else None
 
     def base_path(self):
-        """Returns the directory of the note."""
+        """Returns the directory of the note.
+
+        :return: Base path of the note.
+        :rtype: str
+        """
         return self.__persistence.note_path(self.__name)
 
     def css(self):
         """Returns the CSS for the note.
-        All notes share the same CSS yet, but this may change in future."""
+        All notes share the same CSS yet, but this may change in future.
+
+        :return: Style sheet of the note.
+        :rtype: str
+        """
         return self.__persistence.css()
 
 
 class NoteCollection:
-    """Business logic of a collection of notes."""
+    """Business logic of a collection of notes.
+
+    :param persistence: Persistence provider of the notes.
+    :type  persistence: Persistence
+    """
+
     def __init__(self, persistence):
         self.__persistence = persistence
         self.notes = {}
@@ -336,7 +471,17 @@ class NoteCollection:
         self.notes = notes
 
     def query(self, note_filter="", reverse=False):
-        """Returns an ordered list of all notes that matches the filter."""
+        """Returns an ordered list of all notes that matches the filter.
+
+        :param note_filter: Optional filter to match the notes (Default: "")
+        :type  note_filter: str
+
+        :param reverse: True to reverse the order of notes returned (Default: False)
+        :type  reverse: bool
+
+        :return: Ordered list toall notes that matches the filter.
+        :rtype: list[Note]
+        """
         notes = []
         for note in self.notes.values():
             if note.matches(note_filter):
@@ -345,7 +490,7 @@ class NoteCollection:
         return notes
 
     def add_new(self):
-        """Add a new note to the collection."""
+        """Adds a new note to the collection."""
         name = self._generate_name()
         note = Note(self, self.__persistence, name)
         self.notes[name] = note
@@ -358,17 +503,30 @@ class NoteCollection:
         self.on_changed.fire()
 
     def selected_note(self):
-        """Returns the currently selected note."""
+        """Returns the currently selected note.
+
+        :return: Currently selected note.
+        :rtype: Note
+        """
         return self._selected_note
 
     def select(self, note_name):
-        """Selects a note."""
+        """Selects a note.
+
+        :param note_name: Name of the note to select.
+        :type  note_name: str
+        """
         self._selected_note = self.notes[note_name] \
             if note_name is not None and note_name in self.notes else self.invalid_note
         self.on_selection_changed.fire()
 
 class AppModel:
-    """Business logic of the application itself."""
+    """Business logic of the application itself.
+
+    :param persistence: Optional persistence provider of the AppModel (Default: Pesistence()).
+    :type  persistence: Persistence
+    """
+
     def __init__(self, persistence=Persistence()):
         self.__persistence = persistence
         self.__name = "note.py"
@@ -378,23 +536,43 @@ class AppModel:
         self.notes = NoteCollection(persistence)
 
     def get_name(self):
-        """Returns the name of the app."""
+        """Returns the name of the app.
+
+        :return: Name of the app.
+        :rtype: str
+        """
         return self.__name
 
     def get_geometry(self):
-        """Returns the size of the main window."""
+        """Returns the configured geometry (size) of the main window.
+
+        :return: Configured geometry (size) of the main window.
+        :rtype: str
+        """
         return self.__geometry
 
     def set_geometry(self, geometry):
-        """Sets the size of the main window."""
+        """Sets the geometry (size) of the main window.
+
+        :param geometry: Geometry (size) of the main windows.
+        :type  geometry: str
+        """
         self.__persistence.geometry(geometry)
 
     def get_font_size(self):
-        """Returns the font size of the application."""
+        """Returns the font size of the application.
+
+        :return: Font size of the application.
+        :rtype: int
+        """
         return self.__font_size
 
     def get_theme(self):
-        """Returns the theme of the application."""
+        """Returns the theme of the application.
+
+        :return: Theme of the application.
+        :rtype: str
+        """
         return self.__theme
 
 #-------------------------------------------
@@ -403,7 +581,16 @@ class AppModel:
 
 # pylint: disable-next=too-few-public-methods
 class Icons:
-    """Namespace for icons"""
+    """Namespace for icons.
+
+    Note that master is actually not used, but it makes sure a
+    tkinter interstance was created when Icons are instanciated.
+
+    :param master: tkinter container.
+    :type  master: tk.Widget
+    :param font_size: Font size of default icons.
+    :type  font_size: int
+    """
     def __init__(self, master, font_size):
         _ = master
         font_data = base64.b64decode(ICONFONT)
@@ -426,7 +613,16 @@ class Icons:
 
 # pylint: disable-next=too-many-instance-attributes,too-many-ancestors
 class FilterableListbox(ttk.Frame):
-    """Widget to display a filterable list of notes."""
+    """Widget to display a filterable list of notes.
+
+    :param master: Control owning this widget.
+    :type  master: tk.Widget
+    :param model: Note collection that is displayed by the list.
+    :type  model: NoteCollection
+    :param icons: Icon collection that is used to render some buttons.
+    :type  icons: Icons
+    """
+
     def __init__(self, master, model, icons):
         ttk.Frame.__init__(self, master)
         self.model = model
@@ -474,7 +670,11 @@ class FilterableListbox(ttk.Frame):
             self.listbox.select_set(selected_index)
 
     def onselect(self, event):
-        """Callback when a note is selected. Used internally only."""
+        """Callback when a note is selected. Used internally only.
+
+        :param event: Event triggered the callback.
+        :type  event: tk.Event
+        """
         selection = event.widget.curselection()
         if selection:
             index = selection[0]
@@ -487,6 +687,9 @@ class TabControl(ttk.Frame):
 
     ttk.Notepad crashed on Windows in combination with
     tkinterweb and tk.Text (see https://github.com/Andereoo/TkinterWeb/issues/19).
+
+    :param master: Control owning the TabControl.
+    :type  master: tk.Widget
     """
     def __init__(self, master):
         """Creates a new instance of TabControl."""
@@ -503,7 +706,13 @@ class TabControl(ttk.Frame):
 
 
     def add(self, widget, name):
-        "Adds a tab."
+        """Adds a tab.
+
+        :param widget: Widget containing the contents of the tab.
+        :type  widget: tk.Widget
+        :param name: Name of the tab.
+        :type  name: str
+        """
         index = len(self.tab_widgets)
         button = ttk.Button(self.tab_frame, text=name, command=lambda : self.select(index))
         button.grid(column=index, row=0, stick=tk.E)
@@ -514,7 +723,14 @@ class TabControl(ttk.Frame):
             self.select(index)
 
     def select(self, index=None):
-        "Selects a tab and returns the selected widget."
+        """Selects a tab and returns the selected widget.
+
+        :param index: Optional index of the tab to select (Default: None)
+        :type  index: int | None
+
+        :return: Selected widget.
+        :rtype: tk.Widget
+        """
         length = len(self.tab_widgets)
         if index is not None and 0 <= index < length:
             if self.selected_widget is not None:
@@ -530,7 +746,14 @@ class TabControl(ttk.Frame):
         return self.selected_widget
 
     def index(self, widget):
-        """Returns the index of a widget."""
+        """Returns the index of a widget.
+
+        :param widget: Widget to find.
+        :type  widget: tk.Widget
+
+        :return: Index of the widget or -1 if widget is not contained.
+        :rtype: int
+        """
         for i, cur_widget in enumerate(self.tab_widgets):
             if widget == cur_widget:
                 return i
@@ -538,7 +761,15 @@ class TabControl(ttk.Frame):
 
 # pylint: disable-next=too-many-ancestors
 class NoteFrame(ttk.Frame):
-    """Widget to view and edit a single note."""
+    """Widget to view and edit a single note.
+
+    :param master: Container owning the note frame.
+    :type  master: tk.Widget
+    :param model: Note collection providing the contents of the note frame.
+    :type  model: NoteCollection
+    :param icons: Icon collection used to render some frame buttons.
+    :type  icons: Icons
+    """
 
     def __init__(self, master, model, icons):
         ttk.Frame.__init__(self, master)
@@ -589,7 +820,11 @@ class NoteFrame(ttk.Frame):
         self.notebook.bind("<<TabControlTabChanged>>", self.tab_changed)
 
     def enable(self, value=True):
-        """Enables or disables all activatable sub-widgets."""
+        """Enables or disables all activatable sub-widgets.
+
+        :param value: True to enable the control (Default: True).
+        :type  value: bool
+        """
         for widget in self.activateable_widgets:
             widget.configure(state="normal" if value is True else "disabled")
 
@@ -650,7 +885,11 @@ class NoteFrame(ttk.Frame):
                 message="Failed to create screenshot.\nCheck that gnome-screenshot is installed.")
 
     def link_clicked(self, url):
-        """Opens a link in the default web-browser."""
+        """Opens a link in the default web-browser.
+
+        :paran url: Url to open.
+        :type url: str
+        """
         webbrowser.open(url)
 
     def tab_changed(self, _):
@@ -670,7 +909,11 @@ class NoteFrame(ttk.Frame):
 
 
 class App:
-    """Main class that runs the app."""
+    """Main class that runs the app.
+
+    :param model: Model of the application.
+    :type model: AppModel
+    """
     def __init__(self, model=AppModel()):
         self.__model = model
         self.root = ThemedTk(theme=model.get_theme(), className=model.get_name())
