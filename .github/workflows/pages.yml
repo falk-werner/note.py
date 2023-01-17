@@ -3,7 +3,7 @@ name: GitHub Pages
 on:
   workflow_dispatch:
   push:
-    branches: [ feat/sphinx-doc ]
+    branches: [ main ]
 
 
 permissions:
