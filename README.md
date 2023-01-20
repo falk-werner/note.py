@@ -1,4 +1,5 @@
 [![build](https://github.com/falk-werner/note.py/actions/workflows/build.yml/badge.svg)](https://github.com/falk-werner/note.py/actions/workflows/build.yml)
+[![GitHub Pages](https://github.com/falk-werner/note.py/actions/workflows/pages.yml/badge.svg)](https://falk-werner.github.io/note.py/index.html)
 
 # note.py
 
