@@ -580,7 +580,7 @@ class AppModel:
 # Widgets
 #-------------------------------------------
 
-# pylint: disable-next=too-few-public-methods
+# pylint: disable-next=too-many-instance-attributes,too-few-public-methods
 class Icons:
     """Namespace for icons.
 
@@ -801,7 +801,8 @@ class NoteFrame(ttk.Frame):
         updatebutton = ttk.Button(commandframe, image=icons.save, command = self.save)
         updatebutton.pack(side=tk.RIGHT)
         ToolTip(updatebutton, msg="sync changes (Ctrl+S)", delay=1.0)
-        browsebutton = ttk.Button(commandframe, image=icons.browse, command = self.browse_attachments)
+        browsebutton = ttk.Button(commandframe, image=icons.browse, \
+            command = self.browse_attachments)
         browsebutton.pack(side=tk.RIGHT)
         ToolTip(browsebutton, msg="browse attachments (Ctrl+B)", delay=1.0)
         screenshotbutton = ttk.Button(commandframe, image=icons.screenshot, \
@@ -829,6 +830,7 @@ class NoteFrame(ttk.Frame):
         if self.note is not None:
             path = self.note.base_path()
             if platform.system() == "Windows":
+                # pylint: disable-next=no-member
                 os.startfile(path)
             else:
                 os.system(f"xdg-open '{path}'")
