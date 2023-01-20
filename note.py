@@ -177,7 +177,7 @@ class Persistence:
         :param geometry: Optional geometry of application window (Default: None).
         :type  geometry: str | None
 
-        :return: Configured geometry (size) of the application window.
+        :return: Configured geometry of the application window.
         :rtype: str
         """
         if geometry:
