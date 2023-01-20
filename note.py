@@ -171,7 +171,7 @@ class Persistence:
 
     def geometry(self, geometry=None):
         """
-        Returns and optionally sets the geometry (size)
+        Returns and optionally sets the geometry
         of the application window.
 
         :param geometry: Optional geometry of application window (Default: None).
@@ -282,7 +282,7 @@ class Persistence:
     def screenshot(self, name):
         """Takes a screenshot and returns it's filename.
 
-        :param name: Name of the not the screenshot is assigned to.
+        :param name: Name of the note the screenshot is assigned to.
         :type  name: str
 
         :return: Filename of the screenshot.
@@ -412,7 +412,7 @@ class Note:
         self.__parent.note_changed()
 
     def screenshot(self):
-        """Takes a screenshot and return the filename.
+        """Takes a screenshot and returns the filename.
 
         :return: Filename of the screenshot on success, None otherwise.
         :rtype: str | None
@@ -544,17 +544,17 @@ class AppModel:
         return self.__name
 
     def get_geometry(self):
-        """Returns the configured geometry (size) of the main window.
+        """Returns the configured geometry of the main window.
 
-        :return: Configured geometry (size) of the main window.
+        :return: Configured geometry of the main window.
         :rtype: str
         """
         return self.__geometry
 
     def set_geometry(self, geometry):
-        """Sets the geometry (size) of the main window.
+        """Sets the geometry of the main window.
 
-        :param geometry: Geometry (size) of the main windows.
+        :param geometry: Geometry of the main windows.
         :type  geometry: str
         """
         self.__persistence.geometry(geometry)
