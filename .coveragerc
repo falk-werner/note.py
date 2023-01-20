@@ -1,0 +1,9 @@
+[run]
+branch = True
+command_line = -m pytest
+
+[html]
+directory = coverage/html
+
+[json]
+output = coverage/coverage.json
