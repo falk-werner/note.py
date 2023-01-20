@@ -24,7 +24,7 @@ from tkinter import scrolledtext
 from tkinter import ttk
 from tktooltip import ToolTip
 from ttkthemes import ThemedTk
-from PIL import ImageFont, ImageDraw, Image, ImageTk
+from PIL import ImageFont, ImageDraw, Image, ImageTk, ImageGrab
 from tkinterweb import HtmlFrame
 import cmarkgfm
 from cmarkgfm.cmark import Options as cmarkgfmOptions
@@ -291,9 +291,15 @@ class Persistence:
         """
         filename = "screenshot_" + str(uuid.uuid4()) + ".png"
         full_filename = os.path.join(self.note_path(name), filename)
-        status = os.system(self.__screenshot_command.format(filename=full_filename))
-        exit_code = waitstatus_to_exitcode(status)
+        if platform.system() != "Windows":
+            status = os.system(self.__screenshot_command.format(filename=full_filename))
+            exit_code = waitstatus_to_exitcode(status)
+        else:
+            screenshot = ImageGrab.grab()
+            screenshot.save(full_filename)
+            exit_code = 0
         return filename if 0 == exit_code else None
+        
 
     def css(self):
         """Returns the CSS of the webview.
@@ -808,7 +814,7 @@ class NoteFrame(ttk.Frame):
         screenshotbutton = ttk.Button(commandframe, image=icons.screenshot, \
             command = self.screenshot)
         screenshotbutton.pack(side=tk.RIGHT, padx=5)
-        ToolTip(screenshotbutton, msg="take screenshot (Ctrl+F)", delay=1.0)
+        ToolTip(screenshotbutton, msg="take screenshot (Ctrl+P)", delay=1.0)
         self.namevar = tk.StringVar()
         nameedit = tk.Entry(commandframe, textvariable=self.namevar)
         nameedit.pack(fill=tk.BOTH, expand=True)
@@ -850,7 +856,8 @@ class NoteFrame(ttk.Frame):
             contents = self.text.get(1.0, tk.END)
             html = cmarkgfm.github_flavored_markdown_to_html(contents,
             (cmarkgfmOptions.CMARK_OPT_HARDBREAKS))
-            self.frame.load_html(html, base_url=f"file://{self.note.base_path()}/")
+            uri = f"{Path(self.note.base_path()).as_uri()}/"
+            self.frame.load_html(html, base_url=uri)
             self.frame.add_css(self.note.css())
 
     def update(self):
