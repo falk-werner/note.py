@@ -299,7 +299,6 @@ class Persistence:
             screenshot.save(full_filename)
             exit_code = 0
         return filename if 0 == exit_code else None
-        
 
     def css(self):
         """Returns the CSS of the webview.
