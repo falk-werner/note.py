@@ -3,7 +3,7 @@ name: coverage
 on:
   workflow_dispatch:
   push:
-    branches: [ main, feat/coverage ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
