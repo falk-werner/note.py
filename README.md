@@ -44,6 +44,7 @@ There are some key bindings to speed up some tasks:
 | Ctrl + n    | Create a new note |
 | Ctrl + d    | Delete selected note |
 | Ctrl + s    | Sync changes _(note that changes are also saved automatically)_|
+| Ctrl + b    | Browse attachments |
 | Ctrl + p    | Create screenshot |
 | Ctrl + q    | Quit |
 | Ctrl + e    | Toggle between View and Edit |
