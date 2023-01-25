@@ -826,7 +826,7 @@ class NoteFrame(ttk.Frame):
         self.notebook.bind("<<TabControlTabChanged>>", self.tab_changed)
 
     def browse_attachments(self):
-        """Opens the a note's attachments in file explorer."""
+        """Opens a note's attachments in file explorer."""
         if self.note is not None:
             path = self.note.base_path()
             if platform.system() == "Windows":
