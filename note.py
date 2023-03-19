@@ -138,7 +138,7 @@ class Persistence:
             else "gnome-screenshot -a -f \"{filename}\""
 
     def __set_defaults(self):
-        self.__version = 0,
+        self.__version = 0
         self.__basepath_template = DEFAULT_BASE_PATH
         self.__geometry = DEFAULT_GEOMETRY
         self.__font_size = DEFAULT_FONT_SIZE
