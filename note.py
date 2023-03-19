@@ -35,12 +35,15 @@ import yaml
 # Constants
 #-------------------------------------------
 
+PERSISTENCE_VERSION=2
+
 DEFAULT_THEME="arc"
 DEFAULT_BASE_PATH="{home}/.notepy"
 DEFAULT_GEOMETRY="800x600"
 DEFAULT_FONT_SIZE=20
 
 CONFIG_TEMPLATE="""\
+persistence_version: {version}
 base_path: "{base_path}"
 geometry: {geometry}
 font_size: {font_size}
@@ -115,12 +118,27 @@ class Persistence:
         self.__notespath = os.path.join(self.__basepath, "notes")
         self.__mkdir(self.__notespath)
         self.__css = self.__load_css()
+        self.__migrate()
+
+    def __migrate(self):
+        if self.__version < 2:
+            print("info: migrate note.md to README.md")
+            for name in os.listdir(self.__notespath):
+                legacy_file = os.path.join(self.__notespath, name, "note.md")
+                if os.path.isfile(legacy_file):
+                    desired_file = self.__note_filename(name)
+                    try:
+                        os.rename(legacy_file, desired_file)
+                        print(f"info: sucessfully migrated {name}")
+                    except OSError as ex:
+                        print(f"error: failed to migrate {name}: {ex}")
 
     def __find_screenshot_command(self):
         return "spectacle -rbn -o \"{filename}\"" if which("spectacle") is not None \
             else "gnome-screenshot -a -f \"{filename}\""
 
     def __set_defaults(self):
+        self.__version = 0
         self.__basepath_template = DEFAULT_BASE_PATH
         self.__geometry = DEFAULT_GEOMETRY
         self.__font_size = DEFAULT_FONT_SIZE
@@ -129,6 +147,7 @@ class Persistence:
 
     def __save_config_file(self):
         config = CONFIG_TEMPLATE.format(
+            version=PERSISTENCE_VERSION,
             base_path=self.__basepath_template,
             geometry=self.__geometry,
             font_size=self.__font_size,
@@ -145,6 +164,7 @@ class Persistence:
             self.__save_config_file()
         with open(filename, 'rb') as config_file:
             config = yaml.load(config_file, yaml.SafeLoader)
+        self.__version=config.get('persistence_version', 0)
         self.__basepath_template = config.get('base_path', DEFAULT_BASE_PATH)
         self.__geometry = config.get('geometry', DEFAULT_GEOMETRY)
         self.__font_size = config.get('font_size', DEFAULT_FONT_SIZE)
@@ -168,7 +188,7 @@ class Persistence:
             os.mkdir(path)
 
     def __note_filename(self, name):
-        return os.path.join(self.__notespath, name, "note.md")
+        return os.path.join(self.__notespath, name, "README.md")
 
     def geometry(self, geometry=None):
         """

@@ -1,5 +1,10 @@
 # note.py: Changelog
 
+## v1.2.0
+
+- use `README.md` as default note content instead of `note.md`  
+  _(when notes are put into a Git repository, note contents are shown)_
+
 ## v1.1.0
 
 ### New Features
