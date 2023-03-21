@@ -190,6 +190,9 @@ class Persistence:
     def __note_filename(self, name):
         return os.path.join(self.__notespath, name, "README.md")
 
+    def __note_tags_filename(self, name):
+        return os.path.join(self.__notespath, name, "tags.txt")
+
     def geometry(self, geometry=None):
         """
         Returns and optionally sets the geometry
@@ -300,6 +303,35 @@ class Persistence:
         if os.path.isdir(note_path):
             shutil.rmtree(note_path)
 
+    def read_tags(self, name):
+        """Reads all tags associated with a note.
+
+        :param name: Name of the note.
+        :type  name: str
+
+        :return: List of tags.
+        :rtype: str[]
+        """
+        filename = self.__note_tags_filename(name)
+        if not os.path.isfile(filename):
+            return []
+        with open(filename, "r", encoding='UTF-8') as tags_file:
+            lines = tags_file.readlines()
+        return [line.strip() for line in lines]
+
+    def write_tags(self, name, tags):
+        """Writes all tags associated with a note.
+
+        :param name: Name of the note.
+        :type  name: str
+        :param tags: Name of the note.
+        :type  tags: str[]
+        """
+        filename = self.__note_tags_filename(name)
+        with open(filename, "w", encoding='UTF-8') as tags_file:
+            tags_file.writelines(tag + '\n' for tag in tags)
+
+
     def screenshot(self, name):
         """Takes a screenshot and returns it's filename.
 
@@ -379,6 +411,7 @@ class Note:
         self.__persistence = persistence
         self.__name = name
         self.__contents = self.__persistence.read_note(self.__name) if isvalid else ""
+        self.__tags = self.__persistence.read_tags(self.__name) if isvalid else []
         self.isvalid = isvalid
 
 
@@ -413,6 +446,20 @@ class Note:
             self.__persistence.write_note(self.__name, value)
             self.__contents = value
         return self.__contents
+
+    def tags(self, value=None):
+        """Reads or writes tags of a note.
+
+        :param value: Optional new list of tags (Default: None).
+        :type  value: str[] | None
+
+        :return: Tags of the note
+        :rtype: str[]
+        """
+        if self.isvalid and value is not None:
+            self.__persistence.write_tags(self.__name, value)
+            self.__tags = value
+        return self.__tags
 
     def matches(self, note_filter):
         """"Returns True, when the notes name or content matches the filter.
@@ -786,7 +833,7 @@ class TabControl(ttk.Frame):
                 return i
         return -1
 
-# pylint: disable-next=too-many-ancestors
+# pylint: disable-next=too-many-ancestors,too-many-instance-attributes
 class NoteFrame(ttk.Frame):
     """Widget to view and edit a single note.
 
@@ -841,6 +888,12 @@ class NoteFrame(ttk.Frame):
 
         commandframe.pack(fill=tk.X, side=tk.TOP)
 
+        tagsframe = ttk.Frame(editframe)
+        self.tagsvar = tk.StringVar()
+        tagsedit = tk.Entry(tagsframe, textvariable=self.tagsvar)
+        tagsedit.pack(fill=tk.BOTH, expand=True)
+        tagsframe.pack(fill=tk.X, side=tk.TOP)
+
         self.text = scrolledtext.ScrolledText(editframe)
         self.text.pack(fill=tk.BOTH, expand=True)
         self.notebook.add(editframe, 'Edit')
@@ -893,9 +946,11 @@ class NoteFrame(ttk.Frame):
             self.text.delete(1.0, tk.END)
             self.text.insert(tk.END, contents)
             self.namevar.set(self.note.name())
+            self.tagsvar.set(' '.join(self.note.tags()))
         else:
             self.frame.load_html("")
             self.namevar.set("")
+            self.tagsvar.set("")
             self.text.delete(1.0, tk.END)
             self.enable(False)
 
@@ -905,6 +960,7 @@ class NoteFrame(ttk.Frame):
             contents = self.text.get(1.0, tk.END)
             self.note.contents(contents)
             self.note.name(self.namevar.get())
+            self.note.tags(self.tagsvar.get().split())
             self.update_view()
 
     def delete(self):
