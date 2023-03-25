@@ -331,6 +331,14 @@ class Persistence:
         with open(filename, "w", encoding='UTF-8') as tags_file:
             tags_file.writelines(tag + '\n' for tag in tags)
 
+    def list_tags(self):
+        tags = []
+        for name in self.list_notes():
+            tags.extend(self.read_tags(name))
+        tags = list(set(tags))
+        tags.sort()
+        return tags
+
 
     def screenshot(self, name):
         """Takes a screenshot and returns it's filename.
@@ -459,6 +467,7 @@ class Note:
         if self.isvalid and value is not None:
             self.__persistence.write_tags(self.__name, value)
             self.__tags = value
+            self.__parent.note_changed()
         return self.__tags
 
     def matches(self, note_filter):
@@ -593,6 +602,9 @@ class NoteCollection:
             if note_name is not None and note_name in self.notes else self.invalid_note
         self.on_selection_changed.fire()
 
+    def tags(self):
+        return self.__persistence.list_tags()
+
 class AppModel:
     """Business logic of the application itself.
 
@@ -685,6 +697,40 @@ class Icons:
         draw.text(xy=(0,0), text=value, fill=color, font=self.font, anchor="lt")
         return ImageTk.PhotoImage(image=image)
 
+def float_layout_apply(frame):
+    frame.bind("<Configure>", float_layout_update)
+    frame.pack(side=tk.TOP, fill=tk.X, expand=False)
+
+def float_layout_update(event):
+    frame = event.widget
+    frame_width = frame.winfo_width()
+    x = 0
+    y = 0
+    y_incr = 0
+    for widget in frame.winfo_children():
+        width  = widget.winfo_reqwidth()
+        height = widget.winfo_reqheight()
+        if height > y_incr: y_incr = height
+        if x > 0 and x + width > frame_width:
+            x = 0
+            y += y_incr
+            y_incr = height
+        widget.place(x=x, y=y, width=width, height=height)
+        x += width
+    frame["height"] = y + y_incr
+    frame.pack(side=tk.TOP, fill=tk.X, expand=False)
+
+class TagButton(ttk.Button):
+    def __init__(self, parent, text):
+        super().__init__(parent, text=text, command=self.__update_state)
+        self.__active = False
+
+    def __update_state(self):
+        self.__active = not self.__active
+        state = "pressed" if self.__active else "!pressed"
+        self.state([state])
+
+
 # pylint: disable-next=too-many-instance-attributes,too-many-ancestors
 class FilterableListbox(ttk.Frame):
     """Widget to display a filterable list of notes.
@@ -718,6 +764,11 @@ class FilterableListbox(ttk.Frame):
         ToolTip(self.entry, msg="filter notes (Ctrl+F)", delay=1.0)
         self.commandframe.pack(side = tk.TOP, fill=tk.X)
 
+        self.tagbox = ttk.Frame(self)
+        for tag_name in self.model.tags():
+            TagButton(self.tagbox, tag_name)
+        float_layout_apply(self.tagbox)
+
         self.listbox = tk.Listbox(self)
         self.listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.scrollbar=ttk.Scrollbar(self)
@@ -742,6 +793,12 @@ class FilterableListbox(ttk.Frame):
             i += 1
         if selected_index >= 0:
             self.listbox.select_set(selected_index)
+        # update tags
+        for widget in self.tagbox.winfo_children():
+            widget.destroy()
+        for tag_name in self.model.tags():
+            TagButton(self.tagbox, tag_name)
+        self.tagbox.event_generate("<Configure>", when="tail")
 
     def onselect(self, event):
         """Callback when a note is selected. Used internally only.
