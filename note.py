@@ -470,15 +470,7 @@ class Note:
             self.__parent.note_changed()
         return self.__tags
 
-    def matches(self, note_filter):
-        """"Returns True, when the notes name or content matches the filter.
-
-        :param note_filter: Filter to check the note against.
-        :type  note_filter: str
-
-        :return: True, if the note matches the filter.
-        :rtype: bool
-        """
+    def __matches_filter(self, note_filter):
         result = False
         if self.isvalid:
             if note_filter.lower() in self.__name.lower():
@@ -486,6 +478,28 @@ class Note:
             elif note_filter.lower() in self.__contents.lower():
                 result = True
         return result
+
+    def __matches_tags(self, tags):
+        if len(tags) == 0:
+            return True
+        note_tags = self.tags()
+        for tag in tags:
+            if tag in note_tags:
+                return True
+        return False
+
+    def matches(self, note_filter, tags):
+        """"Returns True, when the notes name or content matches the filter.
+
+        :param note_filter: Filter to check the note against.
+        :type  note_filter: str
+        :param tags: Tags to check the note against.
+        :type  tags: str[]
+
+        :return: True, if the note matches the filter.
+        :rtype: bool
+        """
+        return self.__matches_filter(note_filter) and self.__matches_tags(tags)
 
     def delete(self):
         """Deletes the note and all related files."""
@@ -552,23 +566,23 @@ class NoteCollection:
             notes[note.name()] = note
         self.notes = notes
 
-    def query(self, note_filter="", reverse=False):
+    def query(self, note_filter, tags):
         """Returns an ordered list of all notes that matches the filter.
 
-        :param note_filter: Optional filter to match the notes (Default: "")
+        :param note_filter: filter to match the notes
         :type  note_filter: str
 
-        :param reverse: True to reverse the order of notes returned (Default: False)
-        :type  reverse: bool
+        :param tags: tags to match the notes
+        :type  tags: str[]
 
         :return: Ordered list toall notes that matches the filter.
         :rtype: list[Note]
         """
         notes = []
         for note in self.notes.values():
-            if note.matches(note_filter):
+            if note.matches(note_filter, tags):
                 notes.append(note)
-        notes.sort(key=lambda note: note.name(), reverse=reverse)
+        notes.sort(key=lambda note: note.name())
         return notes
 
     def add_new(self):
@@ -721,14 +735,23 @@ def float_layout_update(event):
     frame.pack(side=tk.TOP, fill=tk.X, expand=False)
 
 class TagButton(ttk.Button):
-    def __init__(self, parent, text):
+    def __init__(self, parent, text, command):
         super().__init__(parent, text=text, command=self.__update_state)
         self.__active = False
+        self.__tag = text
+        self.__command = command
 
     def __update_state(self):
         self.__active = not self.__active
         state = "pressed" if self.__active else "!pressed"
         self.state([state])
+        self.__command()
+
+    def is_active(self):
+        return self.__active
+    
+    def get_tag(self):
+        return self.__tag
 
 
 # pylint: disable-next=too-many-instance-attributes,too-many-ancestors
@@ -765,8 +788,6 @@ class FilterableListbox(ttk.Frame):
         self.commandframe.pack(side = tk.TOP, fill=tk.X)
 
         self.tagbox = ttk.Frame(self)
-        for tag_name in self.model.tags():
-            TagButton(self.tagbox, tag_name)
         float_layout_apply(self.tagbox)
 
         self.listbox = tk.Listbox(self)
@@ -778,11 +799,36 @@ class FilterableListbox(ttk.Frame):
         self.scrollbar.config(command=self.listbox.yview)
         self.update()
 
+    def __get_active_tags(self):
+        tags = []
+        for widget in self.tagbox.winfo_children():
+            if widget.is_active():
+                tags.append(widget.get_tag())
+        return tags
+
+    def __update_tags(self):
+        tags = self.model.tags()
+        changed = False
+        for widget in self.tagbox.winfo_children():
+            tag = widget.get_tag()
+            if tag in tags:
+                tags.remove(tag)
+            else:
+                widget.destroy()
+                changed = True
+        for tag in tags:
+            TagButton(self.tagbox, tag, self.update)
+            changed=True
+        if changed:
+            self.tagbox.event_generate("<Configure>", when="tail")
+
+
     def update(self):
         """Updates the displayed list of notes."""
         note_filter = self.filter.get()
+        tags = self.__get_active_tags()
         self.listbox.delete(0, tk.END)
-        items = self.model.query(note_filter)
+        items = self.model.query(note_filter, tags)
         selected = self.model.selected_note().name()
         i = 0
         selected_index = -1
@@ -793,12 +839,7 @@ class FilterableListbox(ttk.Frame):
             i += 1
         if selected_index >= 0:
             self.listbox.select_set(selected_index)
-        # update tags
-        for widget in self.tagbox.winfo_children():
-            widget.destroy()
-        for tag_name in self.model.tags():
-            TagButton(self.tagbox, tag_name)
-        self.tagbox.event_generate("<Configure>", when="tail")
+        self.__update_tags()
 
     def onselect(self, event):
         """Callback when a note is selected. Used internally only.
