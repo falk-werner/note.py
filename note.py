@@ -332,6 +332,7 @@ class Persistence:
             tags_file.writelines(tag + '\n' for tag in tags)
 
     def list_tags(self):
+        """Returns a list of all tag."""
         tags = []
         for name in self.list_notes():
             tags.extend(self.read_tags(name))
@@ -617,6 +618,7 @@ class NoteCollection:
         self.on_selection_changed.fire()
 
     def tags(self):
+        """Returns a list of all tags."""
         return self.__persistence.list_tags()
 
 class AppModel:
@@ -713,29 +715,46 @@ class Icons:
         return ImageTk.PhotoImage(image=image)
 
 def float_layout_apply(frame):
+    """
+    Applys the float layout to a frame widget.
+
+    :param frame: frame widget
+    :type  frame: tk.Widget
+    """
     frame.bind("<Configure>", float_layout_update)
     frame.pack(side=tk.TOP, fill=tk.X, expand=False)
 
 def float_layout_update(event):
+    """
+    Updates the layout of a widget.
+    This function is called internally by frame layout.
+
+    :param event: resize event
+    :param type: tk.Event
+    """
     frame = event.widget
     frame_width = frame.winfo_width()
-    x = 0
-    y = 0
+    pos_x = 0
+    pos_y = 0
     y_incr = 0
     for widget in frame.winfo_children():
         width  = widget.winfo_reqwidth()
         height = widget.winfo_reqheight()
-        if height > y_incr: y_incr = height
-        if x > 0 and x + width > frame_width:
-            x = 0
-            y += y_incr
+        if height > y_incr:
             y_incr = height
-        widget.place(x=x, y=y, width=width, height=height)
-        x += width
-    frame["height"] = y + y_incr
+        if pos_x > 0 and pos_x + width > frame_width:
+            pos_x = 0
+            pos_y += y_incr
+            y_incr = height
+        widget.place(x=pos_x, y=pos_y, width=width, height=height)
+        pos_x += width
+    frame["height"] = pos_y + y_incr
     frame.pack(side=tk.TOP, fill=tk.X, expand=False)
 
+# pylint: disable-next=too-many-ancestors
 class TagButton(ttk.Button):
+    """Sticky button used to enable and disable tag filter"""
+
     def __init__(self, parent, text, command):
         super().__init__(parent, text=text, command=self.__update_state)
         self.__active = False
@@ -749,9 +768,11 @@ class TagButton(ttk.Button):
         self.__command()
 
     def is_active(self):
+        """Returns true if the tag filter is active."""
         return self.__active
-    
+
     def get_tag(self):
+        """Returns the name of the tag."""
         return self.__tag
 
 
