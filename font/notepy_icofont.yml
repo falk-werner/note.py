@@ -21,3 +21,6 @@ glyphs:
 - name: clip
   new_name: ''
   slot: 61147
+- name: label
+  new_name: ''
+  slot: 61274
