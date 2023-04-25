@@ -3,7 +3,7 @@ name: build
 on:
   workflow_dispatch:
   push:
-    branches: [ main, feat/windows-build ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
