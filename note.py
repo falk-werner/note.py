@@ -373,32 +373,6 @@ class Persistence:
 # Model
 #-------------------------------------------
 
-class ModelEvent:
-    """Basic model event."""
-    def __init__(self):
-        self.subscribers = []
-
-    def subscribe(self, subscriber):
-        """Subscribe to the event.
-
-        :param subscriber: Subscriber to add.
-        :type  subscriber: callable
-        """
-        self.subscribers.append(subscriber)
-
-    def unsubscribe(self, subscriber):
-        """Revoke subscription.
-
-        :param subscriber: Subscriber to remove.
-        :type  subscriber: callable
-        """
-        self.subscribers.remove(subscriber)
-
-    def fire(self):
-        """Inform all subscibers."""
-        for subscriber in self.subscribers:
-            subscriber()
-
 class Note:
     """Contains all business logic of a note.
 
@@ -548,8 +522,8 @@ class NoteCollection:
         for name in note_names:
             note = Note(self, self.__persistence, name)
             self.notes[name] = note
-        self.on_changed = ModelEvent()
-        self.on_selection_changed = ModelEvent()
+        self.on_changed = lambda : None
+        self.on_selection_changed = lambda : None
         self.invalid_note = Note(self, self.__persistence, "", isvalid=False)
         self._selected_note = self.invalid_note
 
@@ -592,12 +566,12 @@ class NoteCollection:
         note = Note(self, self.__persistence, name)
         self.notes[name] = note
         self.select(name)
-        self.on_changed.fire()
+        self.on_changed()
 
     def note_changed(self):
         """Is called by notes only to inform about changes."""
         self._rebuild_index()
-        self.on_changed.fire()
+        self.on_changed()
 
     def selected_note(self):
         """Returns the currently selected note.
@@ -615,7 +589,7 @@ class NoteCollection:
         """
         self._selected_note = self.notes[note_name] \
             if note_name is not None and note_name in self.notes else self.invalid_note
-        self.on_selection_changed.fire()
+        self.on_selection_changed()
 
     def tags(self):
         """Returns a list of all tags."""
@@ -793,7 +767,7 @@ class FilterableListbox(ttk.Frame):
         self.model = model
         self.pack()
         self.__create_widgets(icons)
-        self.model.on_changed.subscribe(self.update)
+        self.model.on_changed = self.update
 
     def __create_widgets(self, icons):
         self.commandframe = ttk.Frame(self)
@@ -972,7 +946,7 @@ class NoteFrame(ttk.Frame):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.__create_widgets(icons)
-        model.on_selection_changed.subscribe(self.update)
+        model.on_selection_changed = self.update
         first_note = list(self.model.notes.keys())[0] if len(self.model.notes) > 0 else None
         self.model.select(first_note)
 
