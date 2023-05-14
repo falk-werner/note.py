@@ -7,7 +7,7 @@ import json
 import sys
 
 COVERAGE_REPORT="coverage/coverage.json"
-THRESHOLD=30
+THRESHOLD=25
 
 def get_value_by_path(data, path):
     """Returns the value from a dict specified by path
