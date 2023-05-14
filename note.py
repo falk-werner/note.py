@@ -594,52 +594,6 @@ class NoteCollection:
         """Returns a list of all tags."""
         return self.__persistence.list_tags()
 
-class AppModel:
-    """Business logic of the application itself.
-
-    :param persistence: Optional persistence provider of the AppModel (Default: Pesistence()).
-    :type  persistence: Persistence
-    """
-
-    def __init__(self, persistence=Persistence()):
-        self.__persistence = persistence
-        self.__geometry = persistence.geometry()
-        self.__font_size = persistence.font_size()
-        self.__theme = persistence.theme()
-        self.notes = NoteCollection(persistence)
-
-    def get_geometry(self):
-        """Returns the configured geometry of the main window.
-
-        :return: Configured geometry of the main window.
-        :rtype: str
-        """
-        return self.__geometry
-
-    def set_geometry(self, geometry):
-        """Sets the geometry of the main window.
-
-        :param geometry: Geometry of the main windows.
-        :type  geometry: str
-        """
-        self.__persistence.geometry(geometry)
-
-    def get_font_size(self):
-        """Returns the font size of the application.
-
-        :return: Font size of the application.
-        :rtype: int
-        """
-        return self.__font_size
-
-    def get_theme(self):
-        """Returns the theme of the application.
-
-        :return: Theme of the application.
-        :rtype: str
-        """
-        return self.__theme
-
 #-------------------------------------------
 # Widgets
 #-------------------------------------------
@@ -1091,27 +1045,28 @@ class App:
     :param model: Model of the application.
     :type model: AppModel
     """
-    def __init__(self, model=AppModel()):
-        self.__model = model
-        self.root = ThemedTk(theme=model.get_theme(), className=APP_NAME)
-        self.icons = Icons(self.root, model.get_font_size())
+    def __init__(self, persistence = Persistence()):
+        self.__persistence = persistence
+        notes = NoteCollection(persistence)
+        self.root = ThemedTk(theme=persistence.theme(), className=APP_NAME)
+        self.icons = Icons(self.root, persistence.font_size())
         self.root.title(APP_NAME)
         self.root.tk.call('wm','iconphoto', self.root._w, self.icons.app)
-        self.root.geometry(model.get_geometry())
+        self.root.geometry(persistence.geometry())
 
         self.split_pane = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
         self.split_pane.pack(fill=tk.BOTH, expand=True)
 
-        self.listbox = FilterableListbox(self.split_pane, model.notes, self.icons)
+        self.listbox = FilterableListbox(self.split_pane, notes, self.icons)
         self.listbox.pack(fill=tk.BOTH, expand=True)
         self.split_pane.add(self.listbox)
 
-        self.noteframe = NoteFrame(self.split_pane, model.notes, self.icons)
+        self.noteframe = NoteFrame(self.split_pane, notes, self.icons)
         self.noteframe.pack(fill=tk.BOTH, expand=True)
         self.split_pane.add(self.noteframe)
 
         self.root.bind("<Control-q>", lambda e: self.root.quit())
-        self.root.bind("<Control-n>", lambda e: model.notes.add_new())
+        self.root.bind("<Control-n>", lambda e: notes.add_new())
         self.root.bind("<Control-s>", lambda e: self.noteframe.save())
         self.root.bind("<Control-b>", lambda e: self.noteframe.browse_attachments())
         self.root.bind("<Control-p>", lambda e: self.noteframe.screenshot())
@@ -1123,7 +1078,7 @@ class App:
         """Saves the current note and closes the app."""
         try:
             self.noteframe.save()
-            self.__model.set_geometry(self.root.winfo_geometry())
+            self.__persistence.geometry(self.root.winfo_geometry())
         # pylint: disable-next=bare-except
         except:
             print("error: failed to save note")
