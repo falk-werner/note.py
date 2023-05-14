@@ -35,6 +35,8 @@ import yaml
 # Constants
 #-------------------------------------------
 
+APP_NAME = "note.py"
+
 PERSISTENCE_VERSION=2
 
 DEFAULT_THEME="arc"
@@ -604,19 +606,10 @@ class AppModel:
 
     def __init__(self, persistence=Persistence()):
         self.__persistence = persistence
-        self.__name = "note.py"
         self.__geometry = persistence.geometry()
         self.__font_size = persistence.font_size()
         self.__theme = persistence.theme()
         self.notes = NoteCollection(persistence)
-
-    def get_name(self):
-        """Returns the name of the app.
-
-        :return: Name of the app.
-        :rtype: str
-        """
-        return self.__name
 
     def get_geometry(self):
         """Returns the configured geometry of the main window.
@@ -1061,7 +1054,7 @@ class NoteFrame(ttk.Frame):
 
     def delete(self):
         """Asks, if the current note should be deleted and deletes it."""
-        confirmed = tk.messagebox.askyesno(title="note.py", \
+        confirmed = tk.messagebox.askyesno(title=APP_NAME, \
             message="Do you want to remove this note?")
         if confirmed:
             self.note.delete()
@@ -1075,7 +1068,7 @@ class NoteFrame(ttk.Frame):
                 f"![screenshot]({filename})\n\n")
             self.text.focus_set()
         else:
-            tk.messagebox.showerror(title="note.py", \
+            tk.messagebox.showerror(title=APP_NAME, \
                 message="Failed to create screenshot.\nCheck that gnome-screenshot is installed.")
 
     def link_clicked(self, url):
@@ -1110,9 +1103,9 @@ class App:
     """
     def __init__(self, model=AppModel()):
         self.__model = model
-        self.root = ThemedTk(theme=model.get_theme(), className=model.get_name())
+        self.root = ThemedTk(theme=model.get_theme(), className=APP_NAME)
         self.icons = Icons(self.root, model.get_font_size())
-        self.root.title(model.get_name())
+        self.root.title(APP_NAME)
         self.root.tk.call('wm','iconphoto', self.root._w, self.icons.app)
         self.root.geometry(model.get_geometry())
 
