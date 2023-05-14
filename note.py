@@ -30,7 +30,6 @@ import cmarkgfm
 from cmarkgfm.cmark import Options as cmarkgfmOptions
 import yaml
 
-
 #-------------------------------------------
 # Constants
 #-------------------------------------------
@@ -342,7 +341,6 @@ class Persistence:
         tags.sort()
         return tags
 
-
     def screenshot(self, name):
         """Takes a screenshot and returns it's filename.
 
@@ -508,7 +506,6 @@ class Note:
         :rtype: str
         """
         return self.__persistence.css()
-
 
 class NoteCollection:
     """Business logic of a collection of notes.
@@ -741,7 +738,6 @@ class TagButton(ttk.Button):
     def get_tag(self):
         """Returns the name of the tag."""
         return self.__tag
-
 
 # pylint: disable-next=too-many-instance-attributes,too-many-ancestors
 class FilterableListbox(ttk.Frame):
@@ -1011,15 +1007,13 @@ class NoteFrame(ttk.Frame):
         for widget in self.activateable_widgets:
             widget.configure(state="normal" if value is True else "disabled")
 
-    def update_view(self):
-        """Updates the view of a note without saving it."""
-        if self.note is not None:
-            contents = self.text.get(1.0, tk.END)
-            html = cmarkgfm.github_flavored_markdown_to_html(contents,
-            (cmarkgfmOptions.CMARK_OPT_HARDBREAKS))
-            uri = f"{Path(self.note.base_path()).as_uri()}/"
-            self.frame.load_html(html, base_url=uri)
-            self.frame.add_css(self.note.css())
+    def __update_view(self):
+        """Updates the view of a note."""
+        contents = self.text.get(1.0, tk.END)
+        html = cmarkgfm.github_flavored_markdown_to_html(contents,
+        (cmarkgfmOptions.CMARK_OPT_HARDBREAKS))
+        self.frame.load_html(html, base_url=f"file://{self.note.base_path()}/")
+        self.frame.add_css(self.note.css())
 
     def update(self):
         """Update the selected note (e.g. a new note is selected)."""
@@ -1028,14 +1022,11 @@ class NoteFrame(ttk.Frame):
         if self.note.isvalid:
             self.enable(True)
             contents = self.note.contents()
-            html = cmarkgfm.github_flavored_markdown_to_html(contents,
-            (cmarkgfmOptions.CMARK_OPT_HARDBREAKS))
-            self.frame.load_html(html, base_url=f"file://{self.note.base_path()}/")
-            self.frame.add_css(self.note.css())
             self.text.delete(1.0, tk.END)
             self.text.insert(tk.END, contents)
             self.namevar.set(self.note.name())
             self.tagsvar.set(' '.join(self.note.tags()))
+            self.__update_view()
         else:
             self.frame.load_html("")
             self.namevar.set("")
@@ -1050,7 +1041,7 @@ class NoteFrame(ttk.Frame):
             self.note.contents(contents)
             self.note.name(self.namevar.get())
             self.note.tags(self.tagsvar.get().split())
-            self.update_view()
+            self.__update_view()
 
     def delete(self):
         """Asks, if the current note should be deleted and deletes it."""
@@ -1093,7 +1084,6 @@ class NoteFrame(ttk.Frame):
         self.notebook.select(new_tab)
         if new_tab == 1:
             self.text.focus_set()
-
 
 class App:
     """Main class that runs the app.
