@@ -30,10 +30,11 @@ import cmarkgfm
 from cmarkgfm.cmark import Options as cmarkgfmOptions
 import yaml
 
-
 #-------------------------------------------
 # Constants
 #-------------------------------------------
+
+APP_NAME = "note.py"
 
 PERSISTENCE_VERSION=2
 
@@ -340,7 +341,6 @@ class Persistence:
         tags.sort()
         return tags
 
-
     def screenshot(self, name):
         """Takes a screenshot and returns it's filename.
 
@@ -372,32 +372,6 @@ class Persistence:
 #-------------------------------------------
 # Model
 #-------------------------------------------
-
-class ModelEvent:
-    """Basic model event."""
-    def __init__(self):
-        self.subscribers = []
-
-    def subscribe(self, subscriber):
-        """Subscribe to the event.
-
-        :param subscriber: Subscriber to add.
-        :type  subscriber: callable
-        """
-        self.subscribers.append(subscriber)
-
-    def unsubscribe(self, subscriber):
-        """Revoke subscription.
-
-        :param subscriber: Subscriber to remove.
-        :type  subscriber: callable
-        """
-        self.subscribers.remove(subscriber)
-
-    def fire(self):
-        """Inform all subscibers."""
-        for subscriber in self.subscribers:
-            subscriber()
 
 class Note:
     """Contains all business logic of a note.
@@ -533,7 +507,6 @@ class Note:
         """
         return self.__persistence.css()
 
-
 class NoteCollection:
     """Business logic of a collection of notes.
 
@@ -548,8 +521,8 @@ class NoteCollection:
         for name in note_names:
             note = Note(self, self.__persistence, name)
             self.notes[name] = note
-        self.on_changed = ModelEvent()
-        self.on_selection_changed = ModelEvent()
+        self.on_changed = lambda : None
+        self.on_selection_changed = lambda : None
         self.invalid_note = Note(self, self.__persistence, "", isvalid=False)
         self._selected_note = self.invalid_note
 
@@ -592,12 +565,12 @@ class NoteCollection:
         note = Note(self, self.__persistence, name)
         self.notes[name] = note
         self.select(name)
-        self.on_changed.fire()
+        self.on_changed()
 
     def note_changed(self):
         """Is called by notes only to inform about changes."""
         self._rebuild_index()
-        self.on_changed.fire()
+        self.on_changed()
 
     def selected_note(self):
         """Returns the currently selected note.
@@ -615,66 +588,11 @@ class NoteCollection:
         """
         self._selected_note = self.notes[note_name] \
             if note_name is not None and note_name in self.notes else self.invalid_note
-        self.on_selection_changed.fire()
+        self.on_selection_changed()
 
     def tags(self):
         """Returns a list of all tags."""
         return self.__persistence.list_tags()
-
-class AppModel:
-    """Business logic of the application itself.
-
-    :param persistence: Optional persistence provider of the AppModel (Default: Pesistence()).
-    :type  persistence: Persistence
-    """
-
-    def __init__(self, persistence=Persistence()):
-        self.__persistence = persistence
-        self.__name = "note.py"
-        self.__geometry = persistence.geometry()
-        self.__font_size = persistence.font_size()
-        self.__theme = persistence.theme()
-        self.notes = NoteCollection(persistence)
-
-    def get_name(self):
-        """Returns the name of the app.
-
-        :return: Name of the app.
-        :rtype: str
-        """
-        return self.__name
-
-    def get_geometry(self):
-        """Returns the configured geometry of the main window.
-
-        :return: Configured geometry of the main window.
-        :rtype: str
-        """
-        return self.__geometry
-
-    def set_geometry(self, geometry):
-        """Sets the geometry of the main window.
-
-        :param geometry: Geometry of the main windows.
-        :type  geometry: str
-        """
-        self.__persistence.geometry(geometry)
-
-    def get_font_size(self):
-        """Returns the font size of the application.
-
-        :return: Font size of the application.
-        :rtype: int
-        """
-        return self.__font_size
-
-    def get_theme(self):
-        """Returns the theme of the application.
-
-        :return: Theme of the application.
-        :rtype: str
-        """
-        return self.__theme
 
 #-------------------------------------------
 # Widgets
@@ -775,7 +693,6 @@ class TagButton(ttk.Button):
         """Returns the name of the tag."""
         return self.__tag
 
-
 # pylint: disable-next=too-many-instance-attributes,too-many-ancestors
 class FilterableListbox(ttk.Frame):
     """Widget to display a filterable list of notes.
@@ -793,7 +710,7 @@ class FilterableListbox(ttk.Frame):
         self.model = model
         self.pack()
         self.__create_widgets(icons)
-        self.model.on_changed.subscribe(self.update)
+        self.model.on_changed = self.update
 
     def __create_widgets(self, icons):
         self.commandframe = ttk.Frame(self)
@@ -972,7 +889,7 @@ class NoteFrame(ttk.Frame):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.__create_widgets(icons)
-        model.on_selection_changed.subscribe(self.update)
+        model.on_selection_changed = self.update
         first_note = list(self.model.notes.keys())[0] if len(self.model.notes) > 0 else None
         self.model.select(first_note)
 
@@ -1044,15 +961,13 @@ class NoteFrame(ttk.Frame):
         for widget in self.activateable_widgets:
             widget.configure(state="normal" if value is True else "disabled")
 
-    def update_view(self):
-        """Updates the view of a note without saving it."""
-        if self.note is not None:
-            contents = self.text.get(1.0, tk.END)
-            html = cmarkgfm.github_flavored_markdown_to_html(contents,
-            (cmarkgfmOptions.CMARK_OPT_HARDBREAKS))
-            uri = f"{Path(self.note.base_path()).as_uri()}/"
-            self.frame.load_html(html, base_url=uri)
-            self.frame.add_css(self.note.css())
+    def __update_view(self):
+        """Updates the view of a note."""
+        contents = self.text.get(1.0, tk.END)
+        html = cmarkgfm.github_flavored_markdown_to_html(contents,
+        (cmarkgfmOptions.CMARK_OPT_HARDBREAKS))
+        self.frame.load_html(html, base_url=f"file://{self.note.base_path()}/")
+        self.frame.add_css(self.note.css())
 
     def update(self):
         """Update the selected note (e.g. a new note is selected)."""
@@ -1061,14 +976,11 @@ class NoteFrame(ttk.Frame):
         if self.note.isvalid:
             self.enable(True)
             contents = self.note.contents()
-            html = cmarkgfm.github_flavored_markdown_to_html(contents,
-            (cmarkgfmOptions.CMARK_OPT_HARDBREAKS))
-            self.frame.load_html(html, base_url=f"file://{self.note.base_path()}/")
-            self.frame.add_css(self.note.css())
             self.text.delete(1.0, tk.END)
             self.text.insert(tk.END, contents)
             self.namevar.set(self.note.name())
             self.tagsvar.set(' '.join(self.note.tags()))
+            self.__update_view()
         else:
             self.frame.load_html("")
             self.namevar.set("")
@@ -1083,11 +995,11 @@ class NoteFrame(ttk.Frame):
             self.note.contents(contents)
             self.note.name(self.namevar.get())
             self.note.tags(self.tagsvar.get().split())
-            self.update_view()
+            self.__update_view()
 
     def delete(self):
         """Asks, if the current note should be deleted and deletes it."""
-        confirmed = tk.messagebox.askyesno(title="note.py", \
+        confirmed = tk.messagebox.askyesno(title=APP_NAME, \
             message="Do you want to remove this note?")
         if confirmed:
             self.note.delete()
@@ -1101,7 +1013,7 @@ class NoteFrame(ttk.Frame):
                 f"![screenshot]({filename})\n\n")
             self.text.focus_set()
         else:
-            tk.messagebox.showerror(title="note.py", \
+            tk.messagebox.showerror(title=APP_NAME, \
                 message="Failed to create screenshot.\nCheck that gnome-screenshot is installed.")
 
     def link_clicked(self, url):
@@ -1127,34 +1039,34 @@ class NoteFrame(ttk.Frame):
         if new_tab == 1:
             self.text.focus_set()
 
-
 class App:
     """Main class that runs the app.
 
     :param model: Model of the application.
     :type model: AppModel
     """
-    def __init__(self, model=AppModel()):
-        self.__model = model
-        self.root = ThemedTk(theme=model.get_theme(), className=model.get_name())
-        self.icons = Icons(self.root, model.get_font_size())
-        self.root.title(model.get_name())
+    def __init__(self, persistence = Persistence()):
+        self.__persistence = persistence
+        notes = NoteCollection(persistence)
+        self.root = ThemedTk(theme=persistence.theme(), className=APP_NAME)
+        self.icons = Icons(self.root, persistence.font_size())
+        self.root.title(APP_NAME)
         self.root.tk.call('wm','iconphoto', self.root._w, self.icons.app)
-        self.root.geometry(model.get_geometry())
+        self.root.geometry(persistence.geometry())
 
         self.split_pane = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
         self.split_pane.pack(fill=tk.BOTH, expand=True)
 
-        self.listbox = FilterableListbox(self.split_pane, model.notes, self.icons)
+        self.listbox = FilterableListbox(self.split_pane, notes, self.icons)
         self.listbox.pack(fill=tk.BOTH, expand=True)
         self.split_pane.add(self.listbox)
 
-        self.noteframe = NoteFrame(self.split_pane, model.notes, self.icons)
+        self.noteframe = NoteFrame(self.split_pane, notes, self.icons)
         self.noteframe.pack(fill=tk.BOTH, expand=True)
         self.split_pane.add(self.noteframe)
 
         self.root.bind("<Control-q>", lambda e: self.root.quit())
-        self.root.bind("<Control-n>", lambda e: model.notes.add_new())
+        self.root.bind("<Control-n>", lambda e: notes.add_new())
         self.root.bind("<Control-s>", lambda e: self.noteframe.save())
         self.root.bind("<Control-b>", lambda e: self.noteframe.browse_attachments())
         self.root.bind("<Control-p>", lambda e: self.noteframe.screenshot())
@@ -1166,7 +1078,7 @@ class App:
         """Saves the current note and closes the app."""
         try:
             self.noteframe.save()
-            self.__model.set_geometry(self.root.winfo_geometry())
+            self.__persistence.geometry(self.root.winfo_geometry())
         # pylint: disable-next=bare-except
         except:
             print("error: failed to save note")
