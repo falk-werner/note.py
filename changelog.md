@@ -2,6 +2,17 @@
 
 ## v1.2.0
 
+### New Features
+
+- notes can be tagged and tags can be used to filter notes
+- note attachments can be opened in file browser
+
+### Fixed
+
+- fixed taking screenshots on Windows 
+
+### Other Changes
+
 - use `README.md` as default note content instead of `note.md`  
   _(when notes are put into a Git repository, note contents are shown)_
 
