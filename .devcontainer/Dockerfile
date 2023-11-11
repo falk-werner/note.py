@@ -2,6 +2,7 @@ FROM ubuntu:latest
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update && apt install -y --no-install-recommends \
+    locales \
     ca-certificates \
     git \
     openssh-client \
@@ -9,6 +10,11 @@ RUN apt update && apt install -y --no-install-recommends \
     python3-pip \
     python3-tk \
     graphviz
+
+RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
+ENV LANG en_US.UTF-8  
+ENV LANGUAGE en_US:en  
+ENV LC_ALL en_US.UTF-8
 
 RUN pip install pytest pylint coverage
 
