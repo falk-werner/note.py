@@ -1,7 +1,7 @@
-cmarkgfm==2022.10.27
-Pillow==9.4.0
-tk==0.1.0
-tkinter-tooltip==2.1.0
-tkinterweb==3.17.1
-ttkthemes==3.2.2
-PyYAML==6.0
+cmarkgfm>=2022.10.27
+Pillow>=10.1.0
+tk>=0.1.0
+tkinter-tooltip>=2.1.0
+tkinterweb>=3.23.1
+ttkthemes>=3.2.2
+PyYAML>=6.0.1
