@@ -77,30 +77,6 @@ p code {
 CONFIG_FILE = ".notepy.yml"
 
 #-------------------------------------------
-# Shims
-#-------------------------------------------
-
-def shim_waitstatus_to_exitcode(status):
-    """Transforms waitstatus to exitcode without Python 3.9 features
-        (see https://bugs.python.org/issue40094 for details)
-
-        :param status: status code as returned by os.system
-        :type status: int
-
-        :return: exit code
-        :rtype: int
-    """
-    if os.WIFSIGNALED(status):
-        return -os.WTERMSIG(status)
-    if os.WIFEXITED(status):
-        return os.WEXITSTATUS(status)
-    if os.WIFSTOPPED(status):
-        return -os.WSTOPSIG(status)
-    return -1
-
-waitstatus_to_exitcode = getattr(os, 'waitstatus_to_exitcode', shim_waitstatus_to_exitcode)
-
-#-------------------------------------------
 # Persistence
 #-------------------------------------------
 
@@ -354,7 +330,7 @@ class Persistence:
         full_filename = os.path.join(self.note_path(name), filename)
         if platform.system() != "Windows":
             status = os.system(self.__screenshot_command.format(filename=full_filename))
-            exit_code = waitstatus_to_exitcode(status)
+            exit_code = os.waitstatus_to_exitcode(status)
         else:
             screenshot = ImageGrab.grab()
             screenshot.save(full_filename)
