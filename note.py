@@ -43,15 +43,6 @@ DEFAULT_BASE_PATH="{home}/.notepy"
 DEFAULT_GEOMETRY="800x600"
 DEFAULT_FONT_SIZE=20
 
-CONFIG_TEMPLATE="""\
-persistence_version: {version}
-base_path: "{base_path}"
-geometry: {geometry}
-font_size: {font_size}
-screenshot_command: {screenshot_command}
-theme: {theme}
-"""
-
 DEFAULT_CSS="""
 table, th, td {
     border: 1px solid black;
@@ -111,7 +102,8 @@ class Persistence:
     All file operations are handled by the Persistence class.
     """
 
-    def __init__(self):
+    def __init__(self, config_file=CONFIG_FILE):
+        self.__config_file = config_file
         self.__set_defaults()
         self.__load_config_file()
         self.__basepath = self.__basepath_template.format(home=Path.home())
@@ -147,20 +139,20 @@ class Persistence:
         self.__theme=DEFAULT_THEME
 
     def __save_config_file(self):
-        config = CONFIG_TEMPLATE.format(
-            version=PERSISTENCE_VERSION,
-            base_path=self.__basepath_template,
-            geometry=self.__geometry,
-            font_size=self.__font_size,
-            screenshot_command=self.__screenshot_command,
-            theme=self.__theme
-        )
-        filename = os.path.join(Path.home(), CONFIG_FILE)
+        config = yaml.dump({
+            "persistence_version": PERSISTENCE_VERSION,
+            "base_path": self.__basepath_template,
+            "geometry": self.__geometry,
+            "font_size": self.__font_size,
+            "screenshot_command": self.__screenshot_command,
+            "theme": self.__theme
+        })
+        filename = os.path.join(Path.home(), self.__config_file)
         with open(filename, "wb") as config_file:
             config_file.write(config.encode('utf-8'))
 
     def __load_config_file(self):
-        filename = os.path.join(Path.home(), CONFIG_FILE)
+        filename = os.path.join(Path.home(), self.__config_file)
         if not os.path.isfile(filename):
             self.__save_config_file()
         with open(filename, 'rb') as config_file:
