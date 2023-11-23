@@ -28,6 +28,7 @@ from PIL import ImageFont, ImageDraw, Image, ImageTk, ImageGrab
 from tkinterweb import HtmlFrame
 import cmarkgfm
 from cmarkgfm.cmark import Options as cmarkgfmOptions
+import urllib
 import yaml
 
 #-------------------------------------------
@@ -95,6 +96,12 @@ waitstatus_to_exitcode = getattr(os, 'waitstatus_to_exitcode', shim_waitstatus_t
 # Persistence
 #-------------------------------------------
 
+def quote(value):
+    return value.translate(str.maketrans({
+        "<":"%3C", ">": "%3E", ":": "%3A", "\"": "%22",
+        "/": "%2F", "\\":"%5C", "|": "%7C", "?": "%3F",
+        "*": "%2A", "%": "%25"}))
+ 
 # pylint: disable-next=too-many-instance-attributes
 class Persistence:
     """Persistence handling.
@@ -181,10 +188,10 @@ class Persistence:
             os.mkdir(path)
 
     def __note_filename(self, name):
-        return os.path.join(self.__notespath, name, "README.md")
+        return os.path.join(self.note_path(name), "README.md")
 
     def __note_tags_filename(self, name):
-        return os.path.join(self.__notespath, name, "tags.txt")
+        return os.path.join(self.note_path(name), "tags.txt")
 
     def geometry(self, geometry=None):
         """
@@ -228,7 +235,7 @@ class Persistence:
         :return: Path of directory that conatins the nore.
         :rtype: str
         """
-        return os.path.join(self.__notespath, name)
+        return os.path.join(self.__notespath, quote(name))
 
     def list_notes(self):
         """Returns a list of all notes.
@@ -238,9 +245,10 @@ class Persistence:
         """
         notes = []
         for name in os.listdir(self.__notespath):
-            notefile = self.__note_filename(name)
+            display_name = urllib.parse.unquote(name)
+            notefile = self.__note_filename(display_name)
             if os.path.isfile(notefile):
-                notes.append(name)
+                notes.append(display_name)
         return notes
 
     def read_note(self, name):
