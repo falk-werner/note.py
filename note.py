@@ -18,6 +18,7 @@ import webbrowser
 import base64
 import uuid
 import shutil
+import urllib
 from shutil import which
 from pathlib import Path
 from tkinter import scrolledtext
@@ -28,7 +29,6 @@ from PIL import ImageFont, ImageDraw, Image, ImageTk, ImageGrab
 from tkinterweb import HtmlFrame
 import cmarkgfm
 from cmarkgfm.cmark import Options as cmarkgfmOptions
-import urllib
 import yaml
 
 #-------------------------------------------
@@ -97,11 +97,15 @@ waitstatus_to_exitcode = getattr(os, 'waitstatus_to_exitcode', shim_waitstatus_t
 #-------------------------------------------
 
 def quote(value):
+    """Quotes special characters that are not allowed in file names.
+    
+    Special characters are URL encoded.
+    """
     return value.translate(str.maketrans({
         "<":"%3C", ">": "%3E", ":": "%3A", "\"": "%22",
         "/": "%2F", "\\":"%5C", "|": "%7C", "?": "%3F",
         "*": "%2A", "%": "%25"}))
- 
+
 # pylint: disable-next=too-many-instance-attributes
 class Persistence:
     """Persistence handling.
