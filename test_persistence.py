@@ -274,6 +274,23 @@ def test_create_note():
     check_note(Persistence(config_file), title, contents, ["new", "note"])
 
 
+def test_create_note_special_char():
+    """Checks if a new note can be created with some special characters."""
+
+    config_file = fs.write_configfile()
+    persistence = Persistence(config_file)
+    title = "new_note /!<>:\ \\ | ?*%"
+    contents = "# New Note\n\nThis is a new note."
+    persistence.write_note(title, contents)
+    persistence.write_tags(title, ["new", "note"])
+
+    check_note(persistence, title, contents, ["new", "note"])
+
+    # Check also against fresh persistence to make
+    # sure everything is written to file system.
+    check_note(Persistence(config_file), title, contents, ["new", "note"])
+
+
 def test_modify_existing_note():
     """Checks if a note can be moified."""
 
