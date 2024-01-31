@@ -62,7 +62,7 @@ class FileSystem:
     # pylint: disable-next=too-many-arguments
     def write_configfile(self,
         filename=".notepy.yml",
-        persistence_version=2,
+        persistence_version=3,
         base_path="base",
         geometry="800x600",
         font_size=20,
@@ -122,7 +122,6 @@ def test_empty_notes():
     +-- .notepy.yml    : notepy config file
     +-- base           : base
         +-- style.css  : style
-        +-- notes      : notes directory (empty)
     ```
     """
 
@@ -139,14 +138,8 @@ def test_empty_notes():
     # check notes directory
     notes_path = os.path.join(fs.root_dir, "base")
     items = os.listdir(notes_path)
-    assert len(items) == 2
+    assert len(items) == 1
     assert fs.is_file(os.path.join("base","style.css"))
-    assert fs.is_dir(os.path.join("base","notes"))
-
-    # check notes/notes directory
-    notes_path = os.path.join(fs.root_dir, "base", "notes")
-    items = os.listdir(notes_path)
-    assert len(items) == 0
 
     # check persistence
     assert len(persistence.list_notes()) == 0
@@ -168,38 +161,36 @@ def test_read_existing():
     +-- .notepy.yml           : notepy config file
     +-- base                  : base
         +-- style.css         : style
-        +-- notes             : notes directory
-            +-- simple        : simple note directory
-            |   +-- README.md : simple note contents
-            +-- tagged        : tagged note directory
-            |   +-- README.md : tagged note contents
-            |   +-- tags.txt  : tagged note tags
-            +-- complex       : complex note directory
-                +-- README.md : complex note contents
-                +-- tags.txt  : complex note tags
-                +-- pic.png   : complex note attachment
+        +-- simple        : simple note directory
+        |   +-- README.md : simple note contents
+        +-- tagged        : tagged note directory
+        |   +-- README.md : tagged note contents
+        |   +-- tags.txt  : tagged note tags
+        +-- complex       : complex note directory
+            +-- README.md : complex note contents
+            +-- tags.txt  : complex note tags
+            +-- pic.png   : complex note attachment
     ```
     """
 
-    config_file = fs.write_configfile(persistence_version=1)
+    config_file = fs.write_configfile()
     fs.mkdir("base")
-    fs.mkdir(os.path.join("base","notes"))
 
     custom_style = "custom_ style"
     fs.write_file(os.path.join("base", "style.css"), custom_style)
 
-    simple_note_path = os.path.join("base","notes","simple")
+    simple_note_path = os.path.join("base","simple")
     fs.mkdir(simple_note_path)
     simple_note_contents = "# Simple Note"
     fs.write_file(os.path.join(simple_note_path, "README.md"), simple_note_contents)
 
-    tagged_note_path = os.path.join("base","notes","tagged")
+    tagged_note_path = os.path.join("base","tagged")
     fs.mkdir(tagged_note_path)
     tagged_note_contents = "# Tagged Note"
     fs.write_file(os.path.join(tagged_note_path, "README.md"), tagged_note_contents)
     fs.write_file(os.path.join(tagged_note_path, "tags.txt"), "info")
 
-    complex_note_path = os.path.join("base","notes","complex")
+    complex_note_path = os.path.join("base","complex")
     fs.mkdir(complex_note_path)
     complex_note_contents = "# Complex Note"
     fs.write_file(os.path.join(complex_note_path, "README.md"), complex_note_contents)
@@ -382,14 +373,13 @@ def test_migrate_from_v1():
                 +-- note.md  : contents of the old note
     ```
 
-    V2 filesystem layout:
+    V3 filesystem layout:
     ```
     root                       : filesystem root
     +-- .notepy.yml            : notepy config file
     +-- base                   : base
-        +-- notes              : notes directory
-            +-- old-note       : direcotry of the old note
-                +-- README.md  : contents of the old note
+         +-- old-note       : direcotry of the old note
+             +-- README.md  : contents of the old note
     ```
     """
 
@@ -403,9 +393,100 @@ def test_migrate_from_v1():
     fs.write_file(os.path.join(note_path, "note.md"), contents)
 
     persistence = Persistence(config_file)
-    assert fs.is_dir(note_path)
-    assert fs.is_file(os.path.join(note_path, "README.md"))
-    assert not fs.exists(os.path.join(note_path, "note.md"))
+    assert fs.is_file(os.path.join("base", "old-note", "README.md"))
+    assert not fs.is_dir(note_path)
+
+    notes = persistence.list_notes()
+    assert len(notes) == 1
+    assert len(persistence.list_tags()) == 0
+    assert "old-note" in notes
+    assert persistence.read_note("old-note") == contents
+    assert len(persistence.read_tags("old-note")) == 0
+
+def test_migrate_from_v2():
+    """Checks migration from persistence v1.
+
+    In persistence v2, a subdirectory "notes" is used
+    to store each note.
+    
+    V2 filesystem layout:
+    ```
+    root                       : filesystem root
+    +-- .notepy.yml            : notepy config file
+    +-- base                   : base
+        +-- notes              : notes directory
+            +-- old-note       : direcotry of the old note
+                +-- README.md  : contents of the old note
+    ```
+
+    V3 filesystem layout:
+    ```
+    root                       : filesystem root
+    +-- .notepy.yml            : notepy config file
+    +-- base                   : base
+        +-- old-note       : direcotry of the old note
+            +-- README.md  : contents of the old note
+    ```
+    """
+
+    config_file = fs.write_configfile(persistence_version=2)
+    fs.mkdir("base")
+    fs.mkdir(os.path.join("base","notes"))
+
+    note_path = os.path.join("base","notes","old-note")
+    fs.mkdir(note_path)
+    contents = "Contents of old note"
+    fs.write_file(os.path.join(note_path, "README.md"), contents)
+
+    persistence = Persistence(config_file)
+    assert fs.is_file(os.path.join("base", "old-note", "README.md"))
+    assert not fs.is_dir(note_path)
+
+    notes = persistence.list_notes()
+    assert len(notes) == 1
+    assert len(persistence.list_tags()) == 0
+    assert "old-note" in notes
+    assert persistence.read_note("old-note") == contents
+    assert len(persistence.read_tags("old-note")) == 0
+
+def test_migrate_from_v2_with_note_names_notes():
+    """Checks migration from persistence v1.
+
+    In persistence v2, a subdirectory "notes" is used
+    to store each note.
+    
+    V2 filesystem layout:
+    ```
+    root                       : filesystem root
+    +-- .notepy.yml            : notepy config file
+    +-- base                   : base
+        +-- notes              : notes directory
+            +-- notes          : direcotry of the old note
+                +-- README.md  : contents of the old note
+    ```
+
+    V3 filesystem layout:
+    ```
+    root                       : filesystem root
+    +-- .notepy.yml            : notepy config file
+    +-- base                   : base
+        +-- old-note       : direcotry of the old note
+            +-- README.md  : contents of the old note
+    ```
+    """
+
+    config_file = fs.write_configfile(persistence_version=2)
+    fs.mkdir("base")
+    fs.mkdir(os.path.join("base","notes"))
+
+    note_path = os.path.join("base","notes","notes")
+    fs.mkdir(note_path)
+    contents = "Contents of old note"
+    fs.write_file(os.path.join(note_path, "README.md"), contents)
+
+    persistence = Persistence(config_file)
+    assert fs.is_file(os.path.join("base", "notes", "README.md"))
+    assert not fs.is_dir(note_path)
 
     notes = persistence.list_notes()
     assert len(notes) == 1
