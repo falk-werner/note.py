@@ -142,7 +142,7 @@ class Persistence:
             try:
                 os.rmdir(notespath)
                 print("info: notes directory removed")
-            except OSError as ex:
+            except OSError:
                 print("info: keep notes directory, since it isn't empty")
         if self.__version < 2:
             print("info: migrate note.md to README.md")
