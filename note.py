@@ -131,7 +131,11 @@ class Persistence:
                 if os.path.isdir(legacy_dir):
                     desired_dir = os.path.join(self.__basepath, name)
                     try:
-                        os.rename(legacy_dir, desired_dir)
+                        if not os.path.isdir(desired_dir):
+                            os.rename(legacy_dir, desired_dir)
+                        else:
+                            shutil.copytree(legacy_dir, desired_dir, dirs_exist_ok=True)
+                            shutil.rmtree(legacy_dir)
                         print(f"info: successfully migrated {name}")
                     except OSError as ex:
                         print(f"error: failed to migrate {name}: {ex}")

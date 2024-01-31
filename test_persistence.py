@@ -491,6 +491,6 @@ def test_migrate_from_v2_with_note_names_notes():
     notes = persistence.list_notes()
     assert len(notes) == 1
     assert len(persistence.list_tags()) == 0
-    assert "old-note" in notes
-    assert persistence.read_note("old-note") == contents
-    assert len(persistence.read_tags("old-note")) == 0
+    assert "notes" in notes
+    assert persistence.read_note("notes") == contents
+    assert len(persistence.read_tags("notes")) == 0
