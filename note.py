@@ -37,7 +37,7 @@ import yaml
 
 APP_NAME = "note.py"
 
-PERSISTENCE_VERSION=2
+PERSISTENCE_VERSION=3
 
 DEFAULT_THEME="arc"
 DEFAULT_BASE_PATH="{home}/.notepy"
@@ -119,21 +119,40 @@ class Persistence:
         self.__load_config_file()
         self.__basepath = self.__basepath_template.format(home=Path.home())
         self.__mkdir(self.__basepath)
-        self.__notespath = os.path.join(self.__basepath, "notes")
-        self.__mkdir(self.__notespath)
         self.__css = self.__load_css()
         self.__migrate()
 
     def __migrate(self):
+        if self.__version < 3:
+            print("info: migrate from notes directory")
+            notespath = os.path.join(self.__basepath, "notes")
+            for name in os.listdir(notespath):
+                legacy_dir = os.path.join(notespath, name)
+                if os.path.isdir(legacy_dir):
+                    desired_dir = os.path.join(self.__basepath, name)
+                    try:
+                        if not os.path.isdir(desired_dir):
+                            os.rename(legacy_dir, desired_dir)
+                        else:
+                            shutil.copytree(legacy_dir, desired_dir, dirs_exist_ok=True)
+                            shutil.rmtree(legacy_dir)
+                        print(f"info: successfully migrated {name}")
+                    except OSError as ex:
+                        print(f"error: failed to migrate {name}: {ex}")
+            try:
+                os.rmdir(notespath)
+                print("info: notes directory removed")
+            except OSError:
+                print("info: keep notes directory, since it isn't empty")
         if self.__version < 2:
             print("info: migrate note.md to README.md")
-            for name in os.listdir(self.__notespath):
-                legacy_file = os.path.join(self.__notespath, name, "note.md")
+            for name in os.listdir(self.__basepath):
+                legacy_file = os.path.join(self.__basepath, name, "note.md")
                 if os.path.isfile(legacy_file):
                     desired_file = self.__note_filename(name)
                     try:
                         os.rename(legacy_file, desired_file)
-                        print(f"info: sucessfully migrated {name}")
+                        print(f"info: successfully migrated {name}")
                     except OSError as ex:
                         print(f"error: failed to migrate {name}: {ex}")
 
@@ -239,7 +258,7 @@ class Persistence:
         :return: Path of directory that conatins the nore.
         :rtype: str
         """
-        return os.path.join(self.__notespath, quote(name))
+        return os.path.join(self.__basepath, quote(name))
 
     def list_notes(self):
         """Returns a list of all notes.
@@ -248,7 +267,7 @@ class Persistence:
         :rtype: list[str]
         """
         notes = []
-        for name in os.listdir(self.__notespath):
+        for name in os.listdir(self.__basepath):
             display_name = urllib.parse.unquote(name)
             notefile = self.__note_filename(display_name)
             if os.path.isfile(notefile):
