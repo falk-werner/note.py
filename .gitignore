@@ -4,3 +4,4 @@
 *.min.ttf
 /coverage
 /.coverage
+/.venv
