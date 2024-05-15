@@ -681,8 +681,7 @@ def float_layout_update(event):
     for widget in frame.winfo_children():
         width  = widget.winfo_reqwidth()
         height = widget.winfo_reqheight()
-        if height > y_incr:
-            y_incr = height
+        y_incr = max(y_incr, height)
         if pos_x > 0 and pos_x + width > frame_width:
             pos_x = 0
             pos_y += y_incr
