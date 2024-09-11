@@ -1,8 +1,14 @@
 # note.py: Changelog
 
+## v1.3.2
+
+### Other Changes
+
+- enhance PyPi meta information
+
 ## v1.3.1
 
-### New Features
+### Other Changes
 
 - note.py is now available at PyPi
 
