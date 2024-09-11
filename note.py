@@ -1189,6 +1189,10 @@ ICONFONT = (
     "bGlwBWxhYmVsAAAAAAH//wACAAAAAQAAAADeBipuAAAAAOBFzJUAAAAA4EXM"
     "lQ==")
 
-if __name__ == "__main__":
+def main():
+    """Entry point."""
     app = App()
     app.run()
+
+if __name__ == "__main__":
+    main()

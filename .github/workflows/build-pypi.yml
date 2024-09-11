@@ -1,0 +1,40 @@
+name: build-pypi
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    tags: [ "*" ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build
+        run: |
+          python -m build
+
+      - name: Deploy
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          python -m twine upload dist/*
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PyPiToken }}

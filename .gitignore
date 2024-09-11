@@ -5,3 +5,5 @@
 /coverage
 /.coverage
 /.venv
+/dist
+/note.py.egg-info

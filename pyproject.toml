@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "note.py"
+version = "1.3.0"
+requires-python = ">= 3.8"
+dependencies = [
+    "cmarkgfm>=2022.10.27",
+    "Pillow>=10.1.0",
+    "tk>=0.1.0",
+    "tkinter-tooltip>=2.1.0",
+    "tkinterweb>=3.23.1",
+    "ttkthemes>=3.2.2",
+    "PyYAML>=6.0.1",
+    "urllib3>=2.0.7"
+]
+
+[tool.setuptools]
+include-package-data = true
+py-modules = ["note"]   
+
+[project.gui-scripts]
+note = "note:main"
