@@ -6,4 +6,4 @@
 /.coverage
 /.venv
 /dist
-/note_py.egg-info
+/note.py_gui.egg-info
