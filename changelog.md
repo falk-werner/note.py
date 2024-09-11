@@ -5,6 +5,7 @@
 ### Other Changes
 
 - enhance PyPi meta information
+- update GitHub actions
 
 ## v1.3.1
 
