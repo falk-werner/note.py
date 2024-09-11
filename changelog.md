@@ -1,5 +1,11 @@
 # note.py: Changelog
 
+## v1.3.0
+
+### New Features
+
+- note.py is now available at PyPi
+
 ## v1.2.0
 
 ### New Features
