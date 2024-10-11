@@ -7,3 +7,4 @@
 /.venv
 /dist
 /note.py_gui.egg-info
+/venv
